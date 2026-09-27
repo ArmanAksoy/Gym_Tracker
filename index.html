@@ -201,6 +201,44 @@
   .lex .n{font-size:14px; font-weight:500; margin-bottom:5px}
   .lex .m{font-size:11px; color:var(--dim); font-family:Oswald,sans-serif; letter-spacing:.03em}
 
+  /* ---------- weight ---------- */
+  .wentry{background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:12px; margin-bottom:14px}
+  .wfields{display:flex; gap:8px; margin-bottom:10px}
+  .wfields label{flex:1; min-width:0; font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--dim)}
+  .wfields label.d{flex:1.3}
+  .wfields input{display:block; width:100%; margin-top:5px; background:var(--bg);
+    border:1px solid var(--line); border-radius:8px; padding:10px 8px; font-size:17px;
+    font-family:Oswald,sans-serif; outline:none}
+  .wfields input[type=date]{font-size:14px; padding:11px 6px}
+  .wfields input:focus{border-color:var(--amber)}
+  .wdelta.up{color:var(--amber)}
+  .wdelta.down{color:var(--green)}
+  .wranges{display:flex; gap:6px; margin-left:auto}
+  .wranges button{font-size:10px; letter-spacing:.08em; color:var(--dim);
+    border:1px solid var(--line); border-radius:6px; padding:5px 8px}
+  .wranges button.on{color:var(--amber); border-color:var(--amber)}
+  .wchart{position:relative; height:170px; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:10px 10px 22px 34px; margin-bottom:6px}
+  .wchart svg{width:100%; height:100%; display:block; overflow:visible}
+  .wchart .yl{position:absolute; left:6px; font-size:9px; color:var(--dim);
+    font-family:Oswald,sans-serif; transform:translateY(-50%)}
+  .wchart .xl{position:absolute; bottom:5px; font-size:9px; color:var(--dim);
+    font-family:Oswald,sans-serif; transform:translateX(-50%); white-space:nowrap}
+  .wrow{display:flex; align-items:center; gap:10px; padding:10px 4px;
+    border-bottom:1px solid var(--line); font-size:13px}
+  .wrow .wd{flex:1; color:var(--dim)}
+  .wrow .wk{font-family:Oswald,sans-serif; font-size:17px}
+  .wrow .wf{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); min-width:44px;
+    text-align:right}
+  .wrow .wx{color:#5D6B78; font-size:16px; padding:2px 6px}
+  .wline{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
+    background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:11px 13px; margin:14px 0 4px; font-size:13px}
+  .wline b{font-family:Oswald,sans-serif; font-size:18px; font-weight:500}
+  .wline span{color:var(--dim); font-size:11px; margin-left:auto}
+
   /* ---------- rest + tabs ---------- */
   #rest{position:fixed; left:0; right:0; bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
     z-index:30; background:var(--card2); border-top:1px solid var(--line);
@@ -332,6 +370,7 @@
   <button data-tab="log">Log</button>
   <button data-tab="prog">Progress</button>
   <button data-tab="lib">Exercises</button>
+  <button data-tab="weight">Weight</button>
 </nav>
 
 <div id="sheet"><div class="inner" id="sheetBody"></div></div>
@@ -1155,6 +1194,11 @@ function renderApp(){
     renderProgress();
     return;
   }
+  if (TAB === 'weight'){
+    $('hdr').classList.add('hide');
+    renderWeight();
+    return;
+  }
   $('hdr').classList.remove('hide');
   var live = S.items.length > 0;
   $$('.stats').forEach(function(el){ el.classList.toggle('hide', !live); });
@@ -1228,6 +1272,11 @@ function renderStart(){
       h += '</div><div class="rowfoot"><button class="go alt" data-repeat="' + esc(s.date) + '">Start</button></div></article>';
     });
   }
+
+  var lw = latestWeight();
+  h += '<button class="wline" data-tab="weight">Weight ' +
+       (lw ? '<b>' + esc(fmtKg(lw.kg)) + '</b> kg<span>' + esc(agoLabel(lw.date)) + '</span>'
+           : '<span>not logged yet</span>') + '</button>';
 
   h += '<div class="rowfoot" style="padding:4px 0 30px">' +
        '<button class="mini" data-add="1">Empty session</button>' +
@@ -1448,6 +1497,204 @@ function renderWarmCard(){
 }
 
 /* ---- progress tab ---- */
+/* ---- weight tab ----
+   The history lives in the Poids tab and is never part of getData, so the
+   app opens just as fast as before. It is fetched the first time you open
+   this tab, kept on the phone, and shown from there instantly next time
+   while a fresh copy loads underneath. Rows are [date, kg, fat]. */
+var WGT = null, WGT_FRESH = false, WGT_BUSY = false;
+try { WGT = JSON.parse(ls('tl_weight') || 'null'); } catch(e){ WGT = null; }
+var WRANGE = ls('tl_wrange') || '1y';
+
+function fmtKg(x){ return (Math.round(Number(x) * 10) / 10).toFixed(1); }
+function todayStr(){ return (DATA && DATA.today) || S.date; }
+function keepWeights(){ ls('tl_weight', JSON.stringify(WGT || [])); }
+
+function latestWeight(){
+  var a = (WGT && WGT.length) ? { date: WGT[WGT.length-1][0], kg: WGT[WGT.length-1][1] } : null;
+  var b = (DATA && DATA.weight) || null;
+  if (!a) return b;
+  if (!b) return a;
+  return b.date > a.date ? b : a;
+}
+
+function loadWeights(){
+  if (WGT_BUSY) return;
+  WGT_BUSY = true;
+  google.script.run
+    .withSuccessHandler(function(r){
+      WGT_BUSY = false; WGT_FRESH = true;
+      WGT = (r && r.rows) || [];
+      keepWeights();
+      if (TAB === 'weight') renderWeight();
+    })
+    .withFailureHandler(function(){
+      WGT_BUSY = false;
+      if (TAB === 'weight' && !WGT) $('view').innerHTML = '<div class="empty">Could not read your weight history.</div>';
+    })
+    .getWeights();
+}
+
+/** Last weigh-in on or before a date, or null. */
+function weightOnOrBefore(d){
+  if (!WGT) return null;
+  for (var i = WGT.length - 1; i >= 0; i--) if (WGT[i][0] <= d) return WGT[i];
+  return null;
+}
+function shiftDate(d, days){
+  var p = d.split('-'), t = new Date(Date.UTC(+p[0], +p[1]-1, +p[2]) + days * 86400000);
+  return t.toISOString().slice(0,10);
+}
+function dayNum(d){ var p = d.split('-'); return Date.UTC(+p[0], +p[1]-1, +p[2]) / 86400000; }
+function monYY(d){ return monthName(d) + ' ' + d.slice(2,4); }
+
+function deltaStat(latest, back, label){
+  if (!latest || !back || back[0] >= latest[0])
+    return '<div class="bigstat"><b class="num">–</b><span>' + label + '</span></div>';
+  var dv = Math.round((latest[1] - back[1]) * 10) / 10;
+  var cls = dv > 0 ? ' up' : (dv < 0 ? ' down' : '');
+  return '<div class="bigstat"><b class="num wdelta' + cls + '">' + (dv > 0 ? '+' : '') + fmtKg(dv) +
+         '</b><span>' + label + '<br>since ' + esc(back[0].slice(0,4) === latest[0].slice(0,4)
+           ? shortDate(back[0]) : monYY(back[0])) + '</span></div>';
+}
+
+function weightChart(rows){
+  var cut = { '3m': 92, '1y': 365, '5y': 1826 }[WRANGE];
+  var from = cut ? shiftDate(todayStr(), -cut) : '';
+  var pts = rows.filter(function(r){ return r[0] >= from; });
+  if (pts.length < 2) return '<div class="empty">Not enough weigh-ins in this range.</div>';
+
+  var x0 = dayNum(pts[0][0]), x1 = dayNum(pts[pts.length-1][0]);
+  if (x1 === x0) x1 = x0 + 1;
+  var lo = Infinity, hi = -Infinity;
+  pts.forEach(function(p){ if (p[1] < lo) lo = p[1]; if (p[1] > hi) hi = p[1]; });
+  lo = Math.floor(lo - 0.5); hi = Math.ceil(hi + 0.5);
+  if (hi - lo < 2) hi = lo + 2;
+  function X(d){ return (dayNum(d) - x0) / (x1 - x0) * 100; }
+  function Y(v){ return (1 - (v - lo) / (hi - lo)) * 100; }
+
+  // Break the line across long gaps rather than drawing a slope nobody lived.
+  var path = '', prev = null;
+  pts.forEach(function(p){
+    var cmd = (!prev || dayNum(p[0]) - dayNum(prev[0]) > 60) ? 'M' : 'L';
+    path += cmd + X(p[0]).toFixed(2) + ' ' + Y(p[1]).toFixed(2) + ' ';
+    prev = p;
+  });
+
+  var h = '<div class="wchart"><div style="position:relative;height:100%">';
+  var mid = Math.round((lo + hi) / 2);
+  [hi, mid, lo].forEach(function(v){
+    h += '<i style="position:absolute;left:0;right:0;height:1px;background:var(--line);top:' + Y(v) + '%"></i>' +
+         '<span class="yl" style="left:-30px;top:' + Y(v) + '%">' + v + '</span>';
+  });
+  h += '<svg viewBox="0 0 100 100" preserveAspectRatio="none" style="position:absolute;inset:0">' +
+       '<path d="' + path + '" fill="none" stroke="var(--amber)" stroke-width="2" ' +
+       'vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg>';
+  if (pts.length <= 60){
+    pts.forEach(function(p){
+      h += '<span style="position:absolute;width:6px;height:6px;border-radius:50%;background:var(--amber);' +
+           'left:calc(' + X(p[0]) + '% - 3px);top:calc(' + Y(p[1]) + '% - 3px)"></span>';
+    });
+  }
+  var span = x1 - x0, labs = [pts[0][0], pts[Math.floor(pts.length/2)][0], pts[pts.length-1][0]];
+  labs.forEach(function(d, i){
+    var pos = i === 0 ? 'left:0;transform:none' : (i === 2 ? 'right:0;left:auto;transform:none' : 'left:' + X(d) + '%');
+    h += '<span class="xl" style="bottom:-18px;' + pos + '">' + esc(span > 400 ? monYY(d) : shortDate(d)) + '</span>';
+  });
+  return h + '</div></div>';
+}
+
+function renderWeight(){
+  if (!WGT_FRESH) loadWeights();
+  if (!WGT){ $('view').innerHTML = '<div class="empty">Reading your weight history…</div>'; return; }
+
+  // Keep anything half typed when fresh data lands underneath.
+  var keep = { d: $('wdate') && $('wdate').value, k: $('wkg') && $('wkg').value, f: $('wfat') && $('wfat').value };
+  var latest = WGT.length ? WGT[WGT.length-1] : null;
+  var h = '';
+
+  h += '<div class="lbl top">Log your weight</div><div class="wentry"><div class="wfields">' +
+       '<label class="d">Date<input type="date" id="wdate" value="' + esc(keep.d || todayStr()) + '"></label>' +
+       '<label>kg<input id="wkg" inputmode="decimal" autocomplete="off" placeholder="' +
+         (latest ? fmtKg(latest[1]) : '') + '" value="' + esc(keep.k || '') + '"></label>' +
+       '<label>Fat %<input id="wfat" inputmode="decimal" autocomplete="off" placeholder="opt." value="' +
+         esc(keep.f || '') + '"></label></div>' +
+       '<button class="go" data-wsave="1">Save</button></div>';
+
+  if (latest){
+    var today = todayStr();
+    h += '<div class="statrow">' +
+         '<div class="bigstat"><b class="num">' + fmtKg(latest[1]) + '</b><span>kg<br>' +
+           esc(agoLabel(latest[0])) + '</span></div>' +
+         deltaStat(latest, weightOnOrBefore(shiftDate(today, -28)), '4 weeks') +
+         deltaStat(latest, weightOnOrBefore(shiftDate(today, -365)), '1 year') + '</div>';
+
+    h += '<div class="chead2"><b>Trend</b><div class="wranges">';
+    [['3m','3M'],['1y','1Y'],['5y','5Y'],['all','All']].forEach(function(r){
+      h += '<button data-wrange="' + r[0] + '"' + (WRANGE === r[0] ? ' class="on"' : '') + '>' + r[1] + '</button>';
+    });
+    h += '</div></div>' + weightChart(WGT);
+    h += '<div style="padding:24px 2px 16px;font-size:11px;color:var(--dim);line-height:1.4">' + WGT.length + ' weigh-ins since ' +
+         esc(monYY(WGT[0][0])) + '. Gaps longer than two months are left open.</div>';
+
+    h += '<div class="lbl">Recent</div>';
+    WGT.slice(-10).reverse().forEach(function(r){
+      h += '<div class="wrow"><span class="wd">' + esc(shortDate(r[0]) + ' ' + r[0].slice(0,4)) + '</span>' +
+           '<span class="wf">' + (r[2] ? fmtKg(r[2]) + '%' : '') + '</span>' +
+           '<span class="wk">' + fmtKg(r[1]) + '</span>' +
+           '<button class="wx" data-wdel="' + esc(r[0]) + '" aria-label="Delete">×</button></div>';
+    });
+    h += '<div style="height:30px"></div>';
+  } else {
+    h += '<div class="empty">No weigh-ins yet.</div>';
+  }
+  $('view').innerHTML = h;
+}
+
+function saveWeightEntry(btn){
+  var d = $('wdate').value, kg = n(String($('wkg').value).replace(',', '.')),
+      fat = n(String($('wfat').value).replace(',', '.'));
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return toast('Pick a date.');
+  if (!kg || kg < 30 || kg > 250) return toast('Enter your weight in kg.');
+  if (fat !== null && (fat <= 0 || fat >= 70)) return toast('Fat % looks off.');
+
+  var before = (WGT || []).slice();
+  WGT = before.filter(function(r){ return r[0] !== d; });
+  WGT.push([d, kg, fat]);
+  WGT.sort(function(a, b){ return a[0] < b[0] ? -1 : (a[0] > b[0] ? 1 : 0); });
+  keepWeights();
+  $('wkg').value = ''; $('wfat').value = '';
+  renderWeight();
+  toast(fmtKg(kg) + ' kg saved.');
+
+  google.script.run
+    .withSuccessHandler(function(){
+      if (DATA && WGT.length) DATA.weight = { date: WGT[WGT.length-1][0], kg: WGT[WGT.length-1][1] };
+    })
+    .withFailureHandler(function(e){
+      WGT = before; keepWeights();
+      if (TAB === 'weight') renderWeight();
+      toast('Not saved: ' + ((e && e.message) || 'no connection') + '.');
+    })
+    .saveWeight({ date: d, kg: kg, fat: fat });
+}
+
+function deleteWeightEntry(d){
+  if (!confirm('Delete the weigh-in of ' + shortDate(d) + ' ' + d.slice(0,4) + '?')) return;
+  var before = (WGT || []).slice();
+  WGT = before.filter(function(r){ return r[0] !== d; });
+  keepWeights();
+  if (DATA && DATA.weight && DATA.weight.date === d) DATA.weight = null;
+  renderWeight();
+  google.script.run
+    .withFailureHandler(function(){
+      WGT = before; keepWeights();
+      if (TAB === 'weight') renderWeight();
+      toast('Could not delete it.');
+    })
+    .deleteWeight(d);
+}
+
 var PROG = null;
 
 function renderProgress(){
@@ -1891,9 +2138,14 @@ document.addEventListener('click', function(ev){
     '[data-warmall],[data-warmclear],[data-hold],[data-seedwarm],[data-diag],'+
     '[data-repair],[data-dorepair],[data-dovoid],[data-selftest],[data-backfill],[data-sortlog],'+
     '[data-rnew],[data-rrm],[data-rup],' +
-    '[data-rsave],[data-rback],[data-rdel],[data-raddnew],#restStop');
+    '[data-rsave],[data-rback],[data-rdel],[data-raddnew],' +
+    '[data-wsave],[data-wrange],[data-wdel],#restStop');
   if (!t) return;
   var d = t.dataset || {};
+
+  if (d.wsave) return saveWeightEntry(t);
+  if (d.wrange){ WRANGE = d.wrange; ls('tl_wrange', WRANGE); return renderWeight(); }
+  if (d.wdel) return deleteWeightEntry(d.wdel);
 
   if (t.id === 'restStop') return rest.working ? cancelWork() : stopRest();
   if (d.tab){ TAB = d.tab; return renderApp(); }
