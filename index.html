@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14181C">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Training">
+<title>Training</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Oswald:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14181C; --card:#1B2128; --card2:#232B34; --line:#2C3641; --line2:#3A4652;
+    --txt:#E8EDF1; --dim:#7F8D9A; --amber:#F0A63C; --green:#52B788; --red:#E0684B;
+    --warm:#6BA8D8; --r:10px; --tabh:58px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  html,body{margin:0; padding:0; background:var(--bg); color:var(--txt);
+    font-family:Inter,system-ui,sans-serif; font-size:15px; -webkit-font-smoothing:antialiased}
+  body{padding-bottom:calc(var(--tabh) + 78px)}
+  .num{font-family:Oswald,Inter,sans-serif; font-weight:500; font-variant-numeric:tabular-nums}
+  button{font-family:inherit; color:inherit; border:0; background:none; cursor:pointer; padding:0}
+  input,select{font-family:inherit; color:inherit}
+
+  /* ---------- header ---------- */
+  header{position:sticky; top:0; z-index:20; background:var(--bg);
+    border-bottom:1px solid var(--line); padding:12px 14px 0}
+  header.hide{display:none}
+  .hrow{display:flex; align-items:center; gap:10px}
+  .hrow input[type=date]{background:var(--card); border:1px solid var(--line);
+    border-radius:var(--r); padding:8px 10px; font-family:Oswald,sans-serif;
+    letter-spacing:.03em; font-size:15px}
+  .stat{text-align:right; line-height:1.15; min-width:50px}
+  .stat:first-of-type{margin-left:auto}
+  .stat b{font-family:Oswald,sans-serif; font-size:20px; font-weight:600; display:block}
+  .stat span{font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:var(--dim)}
+  .stats.hide{display:none}
+  #tools{display:flex; gap:8px; padding:10px 0 11px}
+  #tools.hide{display:none}
+  #tools button{flex:1; border:1px solid var(--line); border-radius:var(--r); padding:11px;
+    font-size:12px; letter-spacing:.08em; text-transform:uppercase; color:var(--dim)}
+  #tools button.pri{border-color:var(--line2); color:var(--txt)}
+  #prog{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim);
+    padding:0 0 10px}
+  #prog:empty{display:none}
+
+  main{padding:12px 14px}
+  .banner{background:var(--card2); border:1px solid var(--amber); border-radius:14px;
+    padding:14px; margin-bottom:14px}
+  .banner b{display:block; font-size:14px; color:var(--amber); margin-bottom:5px}
+  .banner span{display:block; font-size:12px; color:var(--dim); line-height:1.5; margin-bottom:12px}
+  .lbl{font-size:10px; letter-spacing:.16em; text-transform:uppercase; color:var(--dim);
+    padding:6px 2px 9px}
+  .lbl.top{padding-top:0}
+
+  /* ---------- cards ---------- */
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px;
+    margin-bottom:12px; overflow:hidden}
+  .card.allDone{border-color:rgba(82,183,136,.3)}
+  .card.skipped{opacity:.45}
+  .card.due{border-color:rgba(240,166,60,.45)}
+  .card.recent{border-color:rgba(82,183,136,.35)}
+  .card.recent .plan,.card.recent .rowfoot{opacity:.55}
+  .tag{font-size:9px; letter-spacing:.14em; text-transform:uppercase; padding:4px 8px;
+    border-radius:999px; white-space:nowrap}
+  .tag.next{background:var(--amber); color:#12161A; font-weight:600}
+  .tag.last{background:rgba(82,183,136,.16); color:var(--green)}
+  .card.due .ago,.card.recent .ago{font-size:13px}
+  .chead{display:flex; align-items:center; gap:6px; padding:12px 12px 0}
+  .chead h2{margin:0; font-size:15px; font-weight:600; line-height:1.3; flex:1}
+  .ico{color:var(--dim); font-size:12px; padding:6px 7px; border-radius:7px}
+  .ico:active{background:var(--card2)}
+  .ago{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim)}
+  .card.due .ago{color:var(--amber)}
+  .prev{padding:5px 13px 0; font-size:11px; color:var(--dim); letter-spacing:.02em}
+  .prev b{font-family:Oswald,sans-serif; font-weight:500; color:#9DAAB6}
+
+  /* ---------- routine preview ---------- */
+  .plan{padding:10px 13px 2px}
+  .pl{display:flex; align-items:baseline; gap:10px; padding:6px 0; border-top:1px solid var(--line)}
+  .pl:first-child{border-top:0}
+  .pn{flex:1; font-size:13px; line-height:1.35}
+  .pv{font-family:Oswald,sans-serif; font-size:13px; color:#9DAAB6; white-space:nowrap}
+  .pv.none{color:#5D6B78}
+  .go{width:100%; background:var(--amber); color:#12161A; border-radius:var(--r);
+    padding:13px; font-weight:600; font-size:13px; letter-spacing:.08em; text-transform:uppercase}
+  .go:active{filter:brightness(.9)}
+  .go.alt{background:var(--card2); color:var(--txt)}
+
+  /* ---------- set grid ---------- */
+  .grid{padding:8px 12px 0}
+  .gh,.gr{display:grid; grid-template-columns:26px 56px 1fr 1fr 40px 38px; gap:6px; align-items:center}
+  .gh.c3,.gr.c3{grid-template-columns:26px 46px 1fr 1fr 1fr 38px}
+  .gh{font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim);
+    padding:4px 0 6px; border-bottom:1px solid var(--line)}
+  .gh span:nth-child(2),.gh span:nth-child(3),.gh span:nth-child(4),.gh span:nth-child(5){text-align:center}
+  .gr{padding:5px 0; border-bottom:1px solid var(--line)}
+  .gr:last-of-type{border-bottom:0}
+  .setno{font-family:Oswald,sans-serif; font-size:13px; color:var(--dim); text-align:center;
+    padding:7px 0; border-radius:6px; background:var(--card2)}
+  .gr.warm .setno{color:var(--warm)}
+  .gr.fail .setno{color:var(--red)}
+  .ghost{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); text-align:center;
+    padding:7px 2px; border-radius:6px; white-space:nowrap; overflow:hidden}
+  .ghost:active{background:var(--card2); color:var(--txt)}
+  .ghost .gw{display:block; font-size:9px; color:#5D6B78; letter-spacing:.04em}
+  .tick{transition:none}
+  .gr:not(.done) .tick{border-color:var(--amber); color:var(--amber)}
+  .gr .tick.running{background:var(--amber); border-color:var(--amber); color:#12161A}
+  .gr.running{background:rgba(240,166,60,.07); border-radius:8px}
+  .ghost.live{color:var(--amber); font-size:11px; letter-spacing:.06em; text-align:center}
+  .ghost.live .gw{color:var(--amber); opacity:.75}
+  .cell{background:var(--card2); border-radius:7px}
+  .cell input{width:100%; background:none; border:0; text-align:center; outline:none;
+    font-family:Oswald,sans-serif; font-weight:500; font-size:17px; padding:9px 2px}
+  .cell input::placeholder{color:#4E5B67}
+  .cell input{color:#8E9BA7}                 /* a plan, not a record */
+  .gr.typed .cell input{color:var(--txt)}    /* you changed it */
+  .gr.done .cell{background:transparent}
+  .gr.done .cell input{color:var(--green)}   /* written to the sheet */
+  .tick{height:34px; border-radius:7px; background:var(--card2); border:1px solid var(--line);
+    display:flex; align-items:center; justify-content:center; font-size:14px; color:#48535E}
+  .gr.done .tick{background:var(--green); border-color:var(--green); color:#12161A}
+  .gr.done .tick.pr{background:var(--green); border-color:var(--green)}
+
+  .warmcard .chead h2{font-size:13px; letter-spacing:.12em; text-transform:uppercase; color:var(--dim)}
+  .wgrid{padding:6px 12px 12px}
+  .wrow{display:grid; grid-template-columns:1fr 54px 54px 30px auto 34px; gap:6px;
+    align-items:center; padding:5px 0; border-top:1px solid var(--line)}
+  .wrow:first-child{border-top:0}
+  .wn{font-size:13px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .wc input{font-size:15px; padding:7px 2px}
+  .wc input:disabled{color:#4E5B67}
+  .wu{font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+  .wrow .tick{height:30px}
+  .wrow.done .cell{background:transparent}
+  .wrow.done .cell input{color:var(--green)}
+  .wrow.done .tick{background:var(--green); border-color:var(--green); color:#12161A}
+  .wt{padding:6px 8px; font-size:10px}
+  .wt-gap{display:block}
+  .gaprow{margin:1px 0 1px 32px; padding:3px 0 3px 10px; border-left:2px solid var(--line2);
+    font-size:10px; color:var(--dim); font-family:Oswald,sans-serif; letter-spacing:.06em}
+  .gaprow b{color:#9DAAB6; font-weight:500}
+  .gaprow .since{opacity:.65}
+  .gapnote{margin:4px 0 0 32px; font-size:9px; color:#5D6B78; letter-spacing:.06em}
+  .rowfoot{display:flex; gap:8px; padding:9px 12px 12px}
+  .mini{font-size:11px; letter-spacing:.09em; text-transform:uppercase; color:var(--dim);
+    border:1px solid var(--line); border-radius:7px; padding:8px 11px}
+  .mini:active{border-color:var(--line2)}
+  .noteline{padding:0 12px 12px}
+  .noteline input{width:100%; background:none; border:0; border-bottom:1px solid var(--line);
+    padding:7px 2px; font-size:13px; outline:none}
+  .noteline input::placeholder{color:#54616D}
+  .summary{padding:12px; display:flex; align-items:center; gap:10px; font-size:13px}
+  .summary .v{font-family:Oswald,sans-serif; color:var(--dim); font-size:13px; text-align:right}
+
+  /* ---------- library ---------- */
+  .statrow{display:flex; gap:8px; margin-bottom:14px}
+  .bigstat{flex:1; background:var(--card); border:1px solid var(--line); border-radius:12px;
+    padding:12px 10px; text-align:center}
+  .bigstat b{font-family:Oswald,sans-serif; font-size:26px; font-weight:600; display:block;
+    line-height:1}
+  .bigstat span{display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--dim); margin-top:6px; line-height:1.4}
+  .chead2{display:flex; align-items:baseline; gap:8px; padding:0 2px 8px}
+  .chead2 b{font-size:13px; font-weight:600}
+  .chead2 span{font-size:10px; color:var(--dim)}
+  .chartwrap{display:flex; gap:6px}
+  .yaxis{position:relative; width:14px; height:132px; flex:none}
+  .yaxis span{position:absolute; right:0; font-size:9px; color:var(--dim);
+    font-family:Oswald,sans-serif; line-height:1}
+  .chart{position:relative; flex:1; display:flex; align-items:flex-end; gap:3px; height:132px}
+  .chartgrid{position:absolute; left:0; right:0; top:12px; bottom:16px; pointer-events:none}
+  .chartgrid i{position:absolute; left:0; right:0; height:1px; background:var(--line)}
+  .col{flex:1; display:flex; flex-direction:column; align-items:center; height:100%;
+    position:relative; z-index:1}
+  .cnum{font-size:9px; font-family:Oswald,sans-serif; color:#9DAAB6; height:12px; line-height:12px}
+  .barwrap{flex:1; width:100%; display:flex; align-items:flex-end}
+  .bar{width:100%; background:var(--amber); border-radius:2px 2px 0 0}
+  .bar.none{background:var(--line)}
+  .cl{font-size:8px; color:var(--dim); margin-top:4px; height:12px; white-space:nowrap}
+  .srow2{display:flex; align-items:center; gap:10px; background:var(--card);
+    border:1px solid var(--line); border-radius:10px; padding:11px 12px; margin-bottom:7px}
+  .sn{flex:1; font-size:13px; line-height:1.3}
+  .under{display:block; font-size:10px; color:var(--red); margin-top:3px}
+  .sw{font-family:Oswald,sans-serif; font-size:20px; min-width:44px; text-align:right}
+  .sm{font-size:10px; color:var(--dim); text-align:right; min-width:62px; line-height:1.4}
+  .sm b{font-family:Oswald,sans-serif; font-size:14px; color:#9DAAB6}
+  .srch input{width:100%; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--r); padding:13px; font-size:14px; outline:none; margin-bottom:12px}
+  .srch input::placeholder{color:#54616D}
+  .lex{width:100%; text-align:left; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:12px 13px; margin-bottom:8px; display:block}
+  .lex .n{font-size:14px; font-weight:500; margin-bottom:5px}
+  .lex .m{font-size:11px; color:var(--dim); font-family:Oswald,sans-serif; letter-spacing:.03em}
+
+  /* ---------- rest + tabs ---------- */
+  #rest{position:fixed; left:0; right:0; bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
+    z-index:30; background:var(--card2); border-top:1px solid var(--line);
+    padding:10px 14px; display:none; align-items:center; gap:9px}
+  #rest.on{display:flex}
+  #rest .t{font-family:Oswald,sans-serif; font-size:29px; font-weight:600; min-width:76px}
+  #rest .who{font-size:10px; color:var(--dim); line-height:1.3; flex:1; min-width:0;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  #rest.over .t{color:var(--green)}
+  #rest .adj{background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:9px 10px; font-size:12px; font-family:Oswald,sans-serif}
+  #rest .startset{background:var(--amber); color:#12161A; border-radius:9px; padding:11px 14px;
+    font-size:12px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; white-space:nowrap}
+  #rest .startset:active{filter:brightness(.9)}
+  #rest.working{background:var(--card)}
+  #rest.working .t{color:var(--amber)}
+  #bar{position:fixed; left:0; bottom:calc(var(--tabh) + env(safe-area-inset-bottom));
+    height:2px; background:var(--amber); z-index:31; width:0}
+
+  #tabs{position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex;
+    background:var(--bg); border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  #tabs button{flex:1; height:var(--tabh); font-size:11px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--dim)}
+  #tabs button.on{color:var(--amber); box-shadow:inset 0 2px 0 var(--amber)}
+
+  /* ---------- sheet ---------- */
+  #sheet{position:fixed; inset:0; z-index:50; background:rgba(8,10,12,.72); display:none}
+  #sheet.on{display:block}
+  #sheet .inner{position:absolute; left:0; right:0; bottom:0; max-height:84%; overflow:auto;
+    background:var(--card); border-radius:16px 16px 0 0; border-top:1px solid var(--line2);
+    padding:16px 16px calc(20px + env(safe-area-inset-bottom))}
+  #sheet h3{margin:0 0 4px; font-size:15px}
+  #sheet .sub{font-size:11px; color:var(--dim); margin-bottom:12px}
+  #sheet .f{width:100%; background:var(--card2); border:1px solid var(--line);
+    border-radius:8px; padding:12px; font-size:14px; outline:none; margin-bottom:10px}
+  .hrow2{display:flex; align-items:center; gap:10px; padding:9px 0;
+    border-top:1px solid var(--line); font-size:13px}
+  .hrow2 .d{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); width:54px; flex:none}
+  .hrow2{min-width:0}
+  .hrow2 .s{font-family:Oswald,sans-serif; letter-spacing:.02em;
+    min-width:0; overflow-wrap:anywhere}
+  .hrow2 .mini,.hrow2 .f-sets,.hrow2 .e{flex:none}
+  .gapin{display:inline-block; margin:0 7px; padding:0 5px; font-size:10px; color:var(--dim);
+    border-left:2px solid var(--line2)}
+  .workin{display:inline-block; margin-left:4px; font-size:9px; color:#5D6B78}
+  .hrow2 .e{margin-left:auto; font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); flex:none}
+  .addrow{display:flex; gap:6px; align-items:stretch}
+  .addrow .f{margin-bottom:0}
+  .addrow .plate{flex:none; padding:0 16px}
+  .hrow2.justadded{background:rgba(240,166,60,.14); border-radius:8px}
+  .plates{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+  .plate{font-family:Oswald,sans-serif; background:var(--card2); border:1px solid var(--line);
+    border-radius:6px; padding:8px 12px; font-size:14px}
+  .fieldrow{display:flex; gap:8px; align-items:center; margin-top:10px}
+  .fieldrow input{background:var(--card2); border:1px solid var(--line); border-radius:8px;
+    padding:10px; width:86px; font-family:Oswald,sans-serif; font-size:16px; text-align:center; outline:none}
+  .fieldrow label{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim)}
+  .close{width:100%; margin-top:16px; padding:13px; border-radius:var(--r);
+    background:var(--card2); font-size:13px; letter-spacing:.08em; text-transform:uppercase}
+
+  #toast{position:fixed; left:14px; right:14px; bottom:calc(var(--tabh) + 60px); z-index:60;
+    background:#0E1216; border:1px solid var(--line2); border-radius:10px; padding:12px 14px;
+    font-size:13px; display:none}
+  #toast.on{display:block}
+  #toast.win{border-color:rgba(240,166,60,.5); color:var(--amber)}
+  .empty{color:var(--dim); font-size:13px; text-align:center; padding:34px 20px; line-height:1.7}
+
+  /* one-time connection setup (proof of concept only) */
+  #setup{position:fixed; inset:0; z-index:90; background:var(--bg); display:none;
+    padding:calc(28px + env(safe-area-inset-top)) 20px 20px; overflow:auto}
+  #setup.on{display:block}
+  #setup h1{font-family:Oswald,sans-serif; font-weight:500; font-size:26px; margin:0 0 8px}
+  #setup p{color:var(--dim); font-size:13px; line-height:1.55; margin:0 0 22px; max-width:34em}
+  #setup label{display:block; font-size:12px; color:var(--dim); margin:0 0 6px}
+  #setup input{width:100%; background:var(--card); border:1px solid var(--line);
+    border-radius:var(--r); padding:13px; font-size:14px; color:var(--txt); outline:none;
+    margin-bottom:16px}
+  #setup input:focus{border-color:var(--amber)}
+  #setup .go{margin-top:4px}
+  #setup .msg{font-size:13px; margin-top:14px; line-height:1.5; min-height:1.5em}
+  #setup .msg.bad{color:var(--red)} #setup .msg.good{color:var(--green)}
+  #syncdot{position:fixed; top:calc(8px + env(safe-area-inset-top)); right:10px; z-index:25;
+    width:7px; height:7px; border-radius:50%; background:var(--amber); opacity:0;
+    transition:opacity .3s}
+  #syncdot.on{opacity:.9}
+</style>
+</head>
+<body>
+<div id="setup">
+  <h1>Connect to your sheet</h1>
+  <p>This version of the app talks straight to your spreadsheet instead of going
+  through Google's page. You only do this once on this phone.</p>
+  <label for="cfgurl">Data service address</label>
+  <input id="cfgurl" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/.../exec">
+  <label for="cfgkey">Key</label>
+  <input id="cfgkey" autocomplete="off" placeholder="the key from the top of Api.gs">
+  <button class="go" id="cfgsave">Connect</button>
+  <div class="msg" id="cfgmsg"></div>
+</div>
+<div id="syncdot" title="updating from your sheet"></div>
+
+<header id="hdr">
+  <div class="hrow">
+    <input type="date" id="date">
+    <div class="stats stat hide" id="s1"><b class="num" id="setct">0</b><span>sets done</span></div>
+    <div class="stats stat hide" id="s2"><b class="num" id="vol">0</b><span>lb lifted</span></div>
+    <div class="stats stat hide" id="s3"><b class="num" id="clock">0:00</b><span>time in gym</span></div>
+  </div>
+  <div id="prog"></div>
+  <div id="tools" class="hide">
+    <button class="pri" data-add="1">+ Exercise</button>
+    <button data-finish="1" id="finishBtn">Finish session</button>
+  </div>
+</header>
+
+<main id="view"></main>
+
+<div id="bar"></div>
+<div id="rest">
+  <div class="t num" id="rt">0:00</div>
+  <div class="who" id="rwho"></div>
+  <button class="adj" data-adj="-30">&minus;30</button>
+  <button class="adj" data-adj="30">+30</button>
+  <button class="startset" id="restStop">Dismiss</button>
+</div>
+
+<nav id="tabs">
+  <button data-tab="log">Log</button>
+  <button data-tab="prog">Progress</button>
+  <button data-tab="lib">Exercises</button>
+</nav>
+
+<div id="sheet"><div class="inner" id="sheetBody"></div></div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================ POC bridge ==
+   Everything below the app normally gets from Google's page is provided here.
+   google.script.run is replaced by a direct call to the data service, so the
+   rest of the app runs unchanged. */
+(function(){
+  var CFG = null;
+  try { CFG = JSON.parse(localStorage.getItem('tl_api') || 'null'); } catch(e){}
+
+  function call(action, args){
+    return fetch(CFG.url, {
+      method: 'POST',
+      // text/plain keeps this a "simple" request, so no preflight check
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ key: CFG.key, action: action, args: args || [] })
+    }).then(function(r){ return r.json(); })
+      .then(function(j){ if (!j.ok) throw new Error(j.error || 'failed'); return j.result; });
+  }
+
+  /* The first load of the day shows what was last seen straight away, then
+     swaps in fresh data from the sheet a moment later. */
+  var firstLoad = true;
+  function getData(ok, bad){
+    var cached = null;
+    try { cached = JSON.parse(localStorage.getItem('tl_cache') || 'null'); } catch(e){}
+    var dot = document.getElementById('syncdot');
+    var useCache = firstLoad && cached;
+    firstLoad = false;
+    if (useCache) setTimeout(function(){ ok && ok(cached); }, 0);
+    if (dot) dot.classList.add('on');
+    call('getData', []).then(function(fresh){
+      try { localStorage.setItem('tl_cache', JSON.stringify(fresh)); } catch(e){}
+      if (dot) dot.classList.remove('on');
+      if (!useCache){ ok && ok(fresh); return; }
+      // already on screen from the cache: refresh underneath it
+      window.DATA = fresh;
+      if (window.S && !S.items.length){
+        S.date = fresh.today;
+        S.session = nextSessionFor(S.date);
+        var df = document.getElementById('date'); if (df) df.value = S.date;
+        store();
+      }
+      if (window.renderApp) renderApp();
+    }).catch(function(e){
+      if (dot) dot.classList.remove('on');
+      if (!useCache) bad && bad(e);
+    });
+  }
+
+  window.google = { script: {} };
+  Object.defineProperty(window.google.script, 'run', { get: function(){
+    var ok = null, bad = null;
+    var chain = new Proxy({}, { get: function(_, name){
+      if (name === 'withSuccessHandler') return function(f){ ok = f; return chain; };
+      if (name === 'withFailureHandler') return function(f){ bad = f; return chain; };
+      return function(){
+        var args = Array.prototype.slice.call(arguments);
+        if (!CFG) return;                        // not connected yet: setup is showing
+        if (name === 'getData') return getData(ok, bad);
+        call(name, args).then(function(r){ ok && ok(r); })
+                        .catch(function(e){ bad && bad(e); });
+      };
+    }});
+    return chain;
+  }});
+
+  /* one-time setup */
+  function showSetup(){
+    var s = document.getElementById('setup');
+    s.classList.add('on');
+    document.getElementById('cfgsave').onclick = function(){
+      var url = document.getElementById('cfgurl').value.trim();
+      var key = document.getElementById('cfgkey').value.trim();
+      var msg = document.getElementById('cfgmsg');
+      if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url)){
+        msg.className = 'msg bad'; msg.textContent = 'That does not look like a script.google.com address.'; return;
+      }
+      if (!key){ msg.className = 'msg bad'; msg.textContent = 'Paste the key as well.'; return; }
+      msg.className = 'msg'; msg.textContent = 'Checking the connection…';
+      CFG = { url:url, key:key };
+      call('getData', []).then(function(d){
+        localStorage.setItem('tl_api', JSON.stringify(CFG));
+        localStorage.setItem('tl_cache', JSON.stringify(d));
+        msg.className = 'msg good';
+        msg.textContent = 'Connected. ' + d.exercises.length + ' exercises found. Opening…';
+        setTimeout(function(){ location.reload(); }, 700);
+      }).catch(function(e){
+        CFG = null;
+        msg.className = 'msg bad';
+        msg.textContent = 'Could not connect: ' + (e && e.message ? e.message : e);
+      });
+    };
+  }
+  if (!CFG){
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', showSetup);
+    else showSetup();
+  }
+
+  /* works offline and opens instantly once installed */
+  if ('serviceWorker' in navigator && location.protocol === 'https:'){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js'); });
+  }
+})();
+</script>
+<script>
+/* ------------------------------------------------------------------ state */
+var DATA = null;
+var TAB = 'log';
+var LIBQ = '';
+var S = { date:'', session:1, started:0, lastSetAt:0, workRow:null, rest:null, items:[] };
+var rest = { on:false, left:0, total:0, iv:null, lock:null };
+var queue = [];
+var TYPE_OUT = { normal:'work set', warm:'warm-up', fail:'to failure' };
+var TYPE_IN  = { 'work set':'normal', 'warm-up':'warm', 'to failure':'fail',
+                 working:'normal', warmup:'warm', failure:'fail' };
+function kindOf(name, declared){
+  var d = String(declared||'').toLowerCase();
+  if (d==='cardio'||d==='timed'||d==='strength') return d;
+  if (/cardio|treadmill|bike|cycl|ellipt|run|jog|walk|stair|swim|rowing machine/i.test(name)) return 'cardio';
+  if (/plank|hold|carry|hang|bridge/i.test(name)) return 'timed';
+  return 'strength';
+}
+function isWarmup(day){ return /^warm[\s-]?up$/i.test(String(day||'').trim()); }
+function warmRoutine(){
+  var p = (DATA && DATA.program) || [];
+  for (var i=0;i<p.length;i++) if (isWarmup(p[i].day)) return p[i];
+  return null;
+}
+function isTimed(name){ return kindOf(name) === 'timed'; }
+
+function $(id){ return document.getElementById(id); }
+function $$(s){ return Array.prototype.slice.call(document.querySelectorAll(s)); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+function norm(s){ return String(s||'').trim().replace(/\s+/g,' ').toLowerCase(); }
+function n(v){ if (v === '' || v == null) return null; var x = Number(v); return isNaN(x) ? null : x; }
+
+function ls(k,v){
+  try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }
+  catch(e){ return null; }
+}
+function store(){ ls('tl_session', JSON.stringify(S)); }
+function restore(){
+  try { var v = JSON.parse(ls('tl_session')||'null'); return (v && v.date) ? v : null; }
+  catch(e){ return null; }
+}
+function restFor(key){ return Number(ls('tl_rest_'+key)) || 180; }
+function setRestFor(key,v){ ls('tl_rest_'+key, String(v)); }
+
+function toast(msg, win){
+  var t = $('toast');
+  t.textContent = msg;
+  t.className = 'on' + (win ? ' win' : '');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(function(){ t.className = ''; }, win ? 4200 : 2600);
+}
+
+/* ---------------------------------------------------------------- helpers */
+function mmss(sec){
+  sec = Math.max(0, Math.round(sec));
+  return Math.floor(sec/60) + ':' + String(sec%60).padStart(2,'0');
+}
+
+/* ------------------------------------------------------------------- boot */
+google.script.run
+  .withSuccessHandler(boot)
+  .withFailureHandler(function(e){
+    $('view').innerHTML = '<div class="empty">Could not read the spreadsheet.<br>' + esc(e.message) + '</div>';
+  })
+  .getData();
+
+function boot(data){
+  DATA = data;
+  var saved = restore();
+  // Keep the stored date only while a session is genuinely in progress.
+  // Otherwise it sticks at whenever you last trained, which is never right.
+  var live = !!(saved && saved.items && saved.items.length);
+  S.date = (live && saved.date) ? saved.date : data.today;
+  S.items = (saved && saved.items) || [];
+  S.started = (saved && saved.started) || 0;
+  S.lastSetAt = (saved && saved.lastSetAt) || 0;
+  S.session = (saved && saved.session) || 1;
+  S.workRow = (saved && saved.workRow) || null;
+  S.rest = (saved && saved.rest) || null;
+  $('date').value = S.date;
+  renderApp();
+  setInterval(paintClock, 1000);
+  // Phones drop background tabs and this page reloads when you come back.
+  // Both timers are stored as timestamps, so they carry on where they were.
+  if (workingRow()) beginWork('set in progress');
+  else if (S.rest) resumeRest();
+}
+
+function reload(after){
+  google.script.run
+    .withSuccessHandler(function(d){ DATA = d; renderApp(); if (after) after(); })
+    .withFailureHandler(function(){ renderApp(); })
+    .getData();
+}
+
+function exFor(key){
+  if (!DATA) return null;
+  for (var i=0;i<DATA.exercises.length;i++) if (DATA.exercises[i].key === key) return DATA.exercises[i];
+  return null;
+}
+/** True when session a happened before session b. */
+function earlierThan(a, b){
+  if (a.date !== b.date) return a.date < b.date;
+  return (a.session || 1) < (b.session || 1);
+}
+
+/**
+ * The most recent time you did this, strictly before the session you are in.
+ * Training twice in a day means the morning counts as "last time" for the
+ * evening rather than being skipped, and editing an older day never picks up
+ * numbers from a session that came after it.
+ */
+function prevOf(key){
+  var e = exFor(key);
+  if (!e) return null;
+  var now = { date: S.date, session: S.session };
+  for (var i=0;i<e.recent.length;i++){        // newest first
+    if (earlierThan(e.recent[i], now)) return e.recent[i];
+  }
+  return null;
+}
+/** A second workout on the same day is session 2, not an overwrite of session 1. */
+function nextSessionFor(date){
+  var d = (DATA && DATA.sessions || []).filter(function(x){ return x.date === date; })[0];
+  return (d && d.maxSession) ? d.maxSession + 1 : 1;
+}
+
+function itemFor(key){
+  for (var i=0;i<S.items.length;i++) if (S.items[i].key === key) return S.items[i];
+  return null;
+}
+function e1rm(w, r){
+  var wn = (typeof w === 'number') ? w : Number(w);
+  var rn = Number(r);
+  if (isNaN(wn) || !rn) return null;
+  return wn * (1 + rn/30);
+}
+function sel(key){ return document.querySelector('.card[data-key="' + key.replace(/"/g,'\\"') + '"]'); }
+function daysBetween(a, b){
+  var p = String(a).split('-'), q = String(b).split('-');
+  if (p.length !== 3 || q.length !== 3) return null;
+  return Math.round((Date.UTC(+q[0],+q[1]-1,+q[2]) - Date.UTC(+p[0],+p[1]-1,+p[2])) / 86400000);
+}
+function agoLabel(dateStr){
+  if (!dateStr) return 'never';
+  var d = daysBetween(dateStr, S.date);
+  return d === 0 ? 'today' : (d === 1 ? 'yesterday' : d + 'd ago');
+}
+
+/* ------------------------------------------------- planning a set of rows */
+function buildRows(key, targetSets, seed){
+  var prev = prevOf(key), e = exFor(key);
+  // Use the fullest of the recent sessions, so one cut-short day does not
+  // shrink the plan next time.
+  var usual = 0;
+  var now = { date: S.date, session: S.session };
+  if (e) e.recent.forEach(function(s){
+    if (earlierThan(s, now)) usual = Math.max(usual, s.sets.length);
+  });
+  var want = Number(targetSets) || usual || 3;
+  var rows = [];
+  for (var i=0;i<want;i++){
+    var s = prev && (prev.sets[i] || prev.sets[prev.sets.length-1]);
+    // No history yet? Fall back to whatever the routine says the target is.
+    var r = s ? s.reps : (seed && seed.reps ? seed.reps : '');
+    var w = s ? s.weight : ((seed && seed.weight != null && seed.weight !== '') ? seed.weight : '');
+    rows.push({ w: w, r: r,
+                rpe: (s && s.rpe) ? s.rpe : '',
+                type: (s && i < prev.sets.length) ? (TYPE_IN[s.type] || 'normal')
+                                                  : ((seed && seed.warm) ? 'warm' : 'normal'),
+                work: '', started: 0, dur: s && s.duration ? s.duration : '',
+                hr: s && s.hr ? s.hr : '', inc: s && s.incline ? s.incline : '',
+                text:'', rest:'', done:false, t:false, ts:0 });
+  }
+  return rows;
+}
+/** "3 × 10 × 55", or grouped runs like "10 × 80, 3 × 12 × 40" when sets differ. */
+function planLabel(rows){
+  if (!rows.length) return '';
+  if (setStr(rows[0]) === '–') return 'no history';
+  var out = [], run = null;
+  rows.forEach(function(r){
+    var s = setStr(r);
+    if (run && run.s === s) { run.n++; return; }
+    run = { s:s, n:1 };
+    out.push(run);
+  });
+  return out.map(function(g){ return (g.n > 1 ? g.n + ' × ' : '') + g.s; }).join(', ');
+}
+
+/* --------------------------------------------------------------- session */
+function addExercise(name, targetSets, seed){
+  var key = norm(name);
+  if (!key) return;
+  var already = itemFor(key);
+  if (already){
+    var want = Number(targetSets) || already.rows.length;
+    while (already.rows.length < want) addRow(key);
+    return;
+  }
+  // Starting from an empty screen means a new session. The clock starts here,
+  // when you begin the session, rather than at the first set you tick.
+  if (!S.items.length){
+    S.session = nextSessionFor(S.date);
+    S.started = Date.now();
+  }
+  var e = exFor(key);
+  S.items.push({ key:key, name: e ? e.name : String(name).trim(),
+                 rows: buildRows(key, targetSets, seed), note:'', open:true,
+                 warm: !!(seed && seed.warm),
+                 kind: (seed && seed.kind) || kindOf(name),
+                 unit: ((seed && seed.kind) || kindOf(name)) === 'timed' ? 'sec' : 'lb' });
+  store();
+}
+
+function loadWarmup(){
+  var w = warmRoutine();
+  if (!w) return;
+  w.items.forEach(function(it){
+    addExercise(it.name, it.sets, { reps:it.reps, weight:it.weight, warm:true, kind:it.kind });
+  });
+}
+function startRoutine(day){
+  var r = (DATA.program||[]).filter(function(x){ return x.day === day; })[0];
+  if (!r) return;
+  if (!isWarmup(day)) loadWarmup();
+  r.items.forEach(function(it){
+    addExercise(it.name, it.sets, { reps:it.reps, weight:it.weight, kind:it.kind });
+  });
+  renderApp();
+}
+function startFromSession(date){
+  var s = (DATA.sessions||[]).filter(function(x){ return x.date === date; })[0];
+  if (!s) return;
+  loadWarmup();
+  s.exercises.forEach(function(nm){ addExercise(nm, 0); });
+  renderApp();
+}
+/** Rows the person actually typed into but never ticked. */
+function pendingRows(){
+  var out = [];
+  S.items.forEach(function(it){
+    if (it.skipped) return;
+    it.rows.forEach(function(r){
+      if (!r.done && (r.t || r.started) && r.r !== '' && r.r != null) out.push({ it:it, row:r });
+    });
+  });
+  return out;
+}
+
+function confirmFinish(){
+  finishRunning();
+  var pend = pendingRows();
+  var logged = 0;
+  S.items.forEach(function(it){ if (!it.skipped) logged += it.rows.filter(function(r){ return r.done; }).length; });
+  if (!pend.length && !logged) return finishSession();
+
+  var h = '<h3>Finish session</h3><div class="sub">Only ticked sets are written to the sheet.</div>';
+  S.items.forEach(function(it){
+    var right;
+    if (it.skipped) right = 'skipped';
+    else {
+      var d = it.rows.filter(function(r){ return r.done; }).length;
+      var p = it.rows.filter(function(r){ return !r.done && r.t && r.r !== '' && r.r != null; }).length;
+      right = (d ? d + ' set' + (d>1?'s':'') + ' saved' : 'nothing saved') +
+              (p ? ' · ' + p + ' not ticked' : '');
+    }
+    h += '<div class="hrow2"><span class="s" style="flex:1">' + esc(it.name) + '</span>' +
+         '<span class="e">' + esc(right) + '</span></div>';
+  });
+  h += '<div class="plates" style="margin-top:14px">';
+  if (pend.length){
+    h += '<button class="plate" data-tickall="1" style="border-color:var(--amber);color:var(--amber)">Log the ' +
+         pend.length + ' unticked set' + (pend.length>1?'s':'') + ' and finish</button>';
+  }
+  h += '<button class="plate" data-finishnow="1">' + (pend.length ? 'Finish without them' : 'Finish') + '</button>' +
+       '<button class="plate" data-close="1">Cancel</button></div>';
+  openSheet(h);
+}
+
+function tickAllPending(){
+  var touched = {};
+  pendingRows().forEach(function(p){ p.row.done = true; p.row.ts = Date.now(); touched[p.it.key] = p.it; });
+  Object.keys(touched).forEach(function(k){ push(touched[k]); });
+  S.lastSetAt = Date.now();
+  store();
+  setTimeout(finishSession, 80);
+}
+
+function finishSession(){
+  S.items = []; S.started = 0; S.lastSetAt = 0;
+  stopRest(); closeSheet(); store();
+  // Reload from the sheet so the start screen shows what actually landed.
+  google.script.run
+    .withSuccessHandler(function(d){
+      DATA = d;
+      S.date = d.today;                 // back to today, ready for the next one
+      S.session = nextSessionFor(S.date);
+      $('date').value = S.date;
+      store();
+      renderApp();
+      var t = (d.sessions||[]).filter(function(s){ return s.date === S.date; })[0];
+      var bits = t ? [t.sets + ' sets across ' + t.exercises.length + ' exercises'] : null;
+      if (t && t.duration) bits.push(t.duration + ' min');
+      if (t && t.avgRest) bits.push('avg rest ' + mmss(t.avgRest));
+      toast(bits ? 'Saved: ' + bits.join(' · ') : 'Nothing was logged for this session.');
+    })
+    .withFailureHandler(function(){ renderApp(); })
+    .getData();
+}
+
+function removeExercise(key){
+  var it = itemFor(key);
+  S.items = S.items.filter(function(x){ return x.key !== key; });
+  store(); renderApp();
+  if (it) drop(it.name);
+}
+function skipExercise(key){
+  var it = itemFor(key);
+  if (!it) return;
+  it.skipped = !it.skipped;
+  it.open = !it.skipped;
+  store(); push(it); renderApp();
+}
+
+function toggleSet(key, idx){
+  var it = itemFor(key);
+  if (!it) return;
+  var row = it.rows[idx];
+  if (!row) return;
+
+  if (row.done) {
+    row.done = false; row.rest = ''; row.ts = 0; row.work = ''; row.started = 0;
+    store(); push(it); renderApp(); return;
+  }
+
+  // First tap starts the set and times it. Second tap finishes it.
+  // Warm-up moves are a single tap, they are not rest-tracked.
+  if (!row.started && !it.warm){
+    // Moved on without ticking the last one? Close it out rather than lose it.
+    finishRunning();
+    row.started = Date.now();
+    S.workRow = { key: key, idx: idx };
+    store();
+    beginWork(it.name + ' · set ' + (idx + 1));
+    renderApp();
+    return;
+  }
+
+  // Safety net: trust what is on screen if state somehow lost it.
+  var gr = sel(key) ? sel(key).querySelectorAll('.gr')[idx] : null;
+  if (gr){
+    var repField = gr.querySelector('.f-r');
+    if (repField && (row.r === '' || row.r == null) && repField.value.trim() !== ''){
+      var rv = repField.value.trim();
+      row.r = (n(rv) === null ? rv : n(rv));
+    }
+    var wField = gr.querySelector('.f-w');
+    if (wField && (row.w === '' || row.w == null) && wField.value.trim() !== ''){
+      var wv = wField.value.trim();
+      row.w = (n(wv) === null ? wv : n(wv));
+    }
+  }
+  if (it.kind === 'cardio'){
+    if (row.dur === '' || row.dur == null){ toast('How many minutes?'); return; }
+  } else if (row.r === '' || row.r == null){ toast('Reps missing'); return; }
+
+  row.done = true;
+  row.ts = Date.now();
+  if (row.started && row.started < row.ts){
+    row.work = Math.round((row.ts - row.started) / 1000);
+  }
+  row.started = 0;
+  S.workRow = null;
+  endWork();
+  S.lastSetAt = row.ts;
+
+  var pr = isPr(exFor(key), row);
+  store(); push(it);
+  if (row.type !== 'warm') startRest(restFor(key), it.name);
+  renderApp();
+  if (pr) toast('PR on ' + it.name + ' · ' + row.r + ' × ' + fmtW(row.w), true);
+}
+
+/** Ticks the whole warm-up block in one go. */
+function warmAll(on){
+  var now = Date.now();
+  var touched = [];
+  S.items.filter(function(x){ return x.warm; }).forEach(function(it){
+    var changed = false;
+    it.rows.forEach(function(r){
+      if (on && !r.done && r.r !== '' && r.r != null){ r.done = true; r.ts = now; changed = true; }
+      else if (!on && r.done){ r.done = false; r.ts = 0; r.rest = ''; changed = true; }
+    });
+    if (changed) touched.push(it);
+  });
+  if (on && touched.length) S.lastSetAt = now;
+  store();
+  touched.forEach(push);
+  renderApp();
+}
+
+function isPr(e, row){
+  if (!e || !e.best || row.type === 'warm' || !row.done) return false;
+  var s = e1rm(row.w, row.r);
+  return s !== null && s > e.best.score + 0.01;
+}
+
+function addRow(key){
+  var it = itemFor(key);
+  if (!it) return;
+  var seed = null;
+  for (var i=it.rows.length-1;i>=0;i--) if (it.rows[i].done) { seed = it.rows[i]; break; }
+  seed = seed || it.rows[it.rows.length-1] || {};
+  it.rows.push({ w: seed.w != null ? seed.w : '', r: seed.r != null ? seed.r : '',
+                 rpe:'', type:'normal', text:'', rest:'', done:false, t:false, ts:0 });
+  store(); renderApp();
+}
+function dropRow(key){
+  var it = itemFor(key);
+  if (!it || it.rows.length <= 1) return;
+  it.rows.pop();
+  store(); push(it); renderApp();
+}
+function cycleType(key, idx){
+  var it = itemFor(key);
+  var row = it && it.rows[idx];
+  if (!row) return;
+  row.type = row.type === 'normal' ? 'warm' : (row.type === 'warm' ? 'fail' : 'normal');
+  store();
+  if (row.done) push(it);
+  renderApp();
+}
+function copyPrev(key, idx){
+  var it = itemFor(key), prev = prevOf(key);
+  var src = prev && prev.sets[idx];
+  if (!it || !src || it.rows[idx].done) return;
+  it.rows[idx].w = src.weight;
+  it.rows[idx].r = src.reps;
+  store(); renderApp();
+}
+
+/* --------------------------------------------------------------- syncing */
+function push(item){
+  var done = item.rows.filter(function(r){ return r.done; });
+  // No sets logged means the exercise was not done. Take its rows out.
+  if (!done.length || item.skipped) return drop(item.name);
+
+  var payload = {
+    date: S.date, session: S.session, exercise: item.name,
+    sets: done.map(function(r){
+      return { type: TYPE_OUT[r.type] || 'work set', reps: r.r, weight: r.w,
+               rpe: r.rpe, note: r.text || '', ts: r.ts || 0,
+               unit: item.unit || 'lb', kind: item.kind || 'strength',
+               work: r.work || '', duration: r.dur, hr: r.hr, incline: r.inc };
+    })
+  };
+  if (item.note && payload.sets.length) payload.sets[0].note =
+    (payload.sets[0].note ? payload.sets[0].note + ' · ' : '') + item.note;
+  google.script.run
+    .withSuccessHandler(function(res){ applyRests(res); flush(); })
+    .withFailureHandler(function(){
+      queue = queue.filter(function(p){ return p.exercise !== payload.exercise; });
+      queue.push(payload);
+      toast('Offline. ' + queue.length + ' change(s) waiting.');
+    })
+    .logSets(payload);
+}
+function drop(name){
+  google.script.run
+    .withFailureHandler(function(){ toast('Could not update the sheet.'); })
+    .deleteExercise(S.date, S.session, name);
+}
+function flush(){
+  if (!queue.length) return;
+  var p = queue.shift();
+  google.script.run.withSuccessHandler(function(res){ applyRests(res); flush(); })
+    .withFailureHandler(function(){ queue.unshift(p); }).logSets(p);
+}
+
+/**
+ * The server works rest out during the save and returns it, so the app just
+ * applies what came back rather than fetching the whole picture again.
+ */
+function applyRests(res){
+  if (!res || !res.rests) return;
+  var touched = false;
+  S.items.forEach(function(it){
+    var bySet = res.rests[it.key];
+    if (!bySet) return;
+    var n = 0;
+    it.rows.forEach(function(r){
+      if (!r.done) return;
+      n++;
+      var v = bySet[n];
+      if (v && r.rest !== v){ r.rest = v; touched = true; }
+    });
+  });
+  if (touched){
+    store();
+    if (TAB === 'log' && S.items.length) renderSession();
+  }
+  PROG = null;
+}
+setInterval(flush, 20000);
+
+/**
+ * Completes whatever set is currently running. Called when you start another
+ * one, or when you finish the session, so a missed second tap never loses data.
+ */
+function finishRunning(){
+  var w = S.workRow;
+  if (!w) return false;
+  var it = itemFor(w.key);
+  var row = it && it.rows[w.idx];
+  if (!row || !row.started || row.done){ S.workRow = null; return false; }
+  var ready = (it.kind === 'cardio') ? (row.dur !== '' && row.dur != null)
+                                     : (row.r !== '' && row.r != null);
+  if (!ready){ row.started = 0; S.workRow = null; return false; }
+  row.done = true;
+  row.ts = Date.now();
+  // We do not know when this set actually ended, only that it is over. Keep the
+  // reps and the weight, leave the timing blank rather than guess at it.
+  row.work = '';
+  row.started = 0;
+  S.workRow = null;
+  S.lastSetAt = row.ts;
+  store(); push(it);
+  return true;
+}
+
+/** The bar switches from counting rest to counting the set you are doing. */
+function beginWork(label){
+  clearInterval(rest.iv);
+  rest.working = true;
+  $('rest').classList.remove('over');
+  $('rest').classList.add('on','working');
+  $('rwho').textContent = label + ' — tap the tick when you finish';
+  $('restStop').textContent = 'Cancel';
+  $('bar').style.width = '0';
+  clearInterval(rest.wiv);
+  rest.wiv = setInterval(paintWork, 1000);
+  paintWork();
+  wake(true);
+}
+function paintWork(){
+  var w = workingRow();
+  if (!w) return;
+  $('rt').textContent = mmss((Date.now() - w.started)/1000);
+}
+function workingRow(){
+  if (!S.workRow) return null;
+  var it = itemFor(S.workRow.key);
+  var r = it && it.rows[S.workRow.idx];
+  return (r && r.started) ? r : null;
+}
+function endWork(){
+  clearInterval(rest.wiv);
+  rest.working = false;
+  $('rest').classList.remove('working');
+  $('restStop').textContent = 'Dismiss';
+}
+function cancelWork(){
+  var w = workingRow();
+  if (w) w.started = 0;
+  S.workRow = null;
+  store(); endWork(); stopRest(); renderApp();
+}
+
+/* ------------------------------------------------------------------ rest */
+/* Counts up from the moment the set ended. Held as a timestamp rather than a
+   number ticking down, so switching apps and coming back picks up where it was
+   instead of losing the count. */
+
+function startRest(sec, label){
+  S.rest = { since: Date.now(), target: sec || 180, label: label || '', beeped: false };
+  store();
+  resumeRest();
+}
+function resumeRest(){
+  if (!S.rest) return;
+  rest.working = false;
+  $('rest').classList.add('on');
+  $('rest').classList.remove('working');
+  $('rwho').textContent = S.rest.label ? (S.rest.label + ' · target ' + mmss(S.rest.target))
+                                       : ('target ' + mmss(S.rest.target));
+  $('restStop').textContent = 'Dismiss';
+  clearInterval(rest.iv);
+  rest.iv = setInterval(tick, 1000);
+  wake(true);
+  paintRest();
+}
+function restElapsed(){
+  return S.rest ? Math.max(0, Math.round((Date.now() - S.rest.since) / 1000)) : 0;
+}
+function tick(){
+  if (!S.rest) return stopRest();
+  var e = restElapsed();
+  if (!S.rest.beeped && e >= S.rest.target){
+    S.rest.beeped = true; store();
+    beep();
+    if (navigator.vibrate) navigator.vibrate([220,90,220]);
+  }
+  if (e > S.rest.target + 3600) return stopRest();
+  paintRest();
+}
+function paintRest(){
+  if (!S.rest) return;
+  var e = restElapsed();
+  $('rt').textContent = mmss(e);
+  $('rest').classList.toggle('over', e >= S.rest.target);
+  var pct = S.rest.target ? Math.min(1, e / S.rest.target) : 0;
+  $('bar').style.width = (pct*100) + '%';
+}
+function stopRest(){
+  S.rest = null; store();
+  clearInterval(rest.iv);
+  $('rest').classList.remove('on','over','working');
+  $('bar').style.width = '0';
+  wake(false);
+}
+function wake(on){
+  try {
+    if (on && navigator.wakeLock && !rest.lock) {
+      navigator.wakeLock.request('screen').then(function(l){ rest.lock = l; }).catch(function(){});
+    } else if (!on && rest.lock) { rest.lock.release(); rest.lock = null; }
+  } catch(e){}
+}
+function beep(){
+  try {
+    var C = window.AudioContext || window.webkitAudioContext;
+    var c = new C(), o = c.createOscillator(), g = c.createGain();
+    o.connect(g); g.connect(c.destination);
+    o.frequency.value = 660; o.type = 'sine';
+    g.gain.setValueAtTime(.001, c.currentTime);
+    g.gain.exponentialRampToValueAtTime(.25, c.currentTime + .02);
+    g.gain.exponentialRampToValueAtTime(.001, c.currentTime + .55);
+    o.start(); o.stop(c.currentTime + .6);
+  } catch(e){}
+}
+
+function paintClock(){
+  $('clock').textContent = S.started ? mmss((Date.now() - S.started)/1000) : '0:00';
+}
+
+/* -------------------------------------------------------------- helpers */
+function fmtW(w){
+  if (w === '' || w == null) return '';
+  if (typeof w !== 'number') return String(w);
+  return w < 0 ? '−' + Math.abs(w) : String(w);
+}
+function setStr(o){
+  var dur = o.duration !== undefined ? o.duration : o.dur;
+  var hr = o.hr, inc = (o.incline !== undefined ? o.incline : o.inc);
+  if (dur){
+    var bits = [Math.round(dur/60) + ' min'];
+    if (hr) bits.push(hr + ' bpm');
+    if (inc) bits.push('inc ' + inc);
+    return bits.join(' · ');
+  }
+  var w = fmtW(o.weight !== undefined ? o.weight : o.w);
+  var r = o.reps !== undefined ? o.reps : o.r;
+  if (r === '' || r == null) return '–';
+  if (o.unit === 'sec') return r + ' sec';
+  return r + (w === '' ? '' : ' × ' + w);
+}
+function totals(){
+  var v = 0, c = 0, done = 0, skipped = 0, planned = 0;
+  S.items.forEach(function(it){
+    // Warm-up moves have their own counter on their own card. They are not
+    // exercises of the day, so they do not belong in "3 of 4".
+    if (it.warm) return;
+    planned++;
+    if (it.skipped) { skipped++; planned--; return; }
+    var any = false;
+    it.rows.forEach(function(r){
+      if (!r.done) return;
+      any = true;
+      if (r.type === 'warm') return;
+      c++;
+      if (typeof r.w === 'number' && r.w > 0) v += r.w * (Number(r.r)||0);
+    });
+    if (any) done++;
+  });
+  return { volume: Math.round(v), sets: c, done: done, skipped: skipped,
+           planned: planned };
+}
+function monthName(s){
+  var p = String(s).split('-');
+  if (p.length !== 3) return '';
+  var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return m[Number(p[1])-1];
+}
+function shortDate(s){
+  var p = String(s).split('-');
+  if (p.length !== 3) return s;
+  var m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return Number(p[2]) + ' ' + m[Number(p[1])-1];
+}
+
+/* ------------------------------------------------------------- rendering */
+function renderApp(){
+  $$('#tabs button').forEach(function(b){ b.className = b.dataset.tab === TAB ? 'on' : ''; });
+  if (TAB === 'lib'){
+    $('hdr').classList.add('hide');
+    renderLibrary();
+    return;
+  }
+  if (TAB === 'prog'){
+    $('hdr').classList.add('hide');
+    renderProgress();
+    return;
+  }
+  $('hdr').classList.remove('hide');
+  var live = S.items.length > 0;
+  $$('.stats').forEach(function(el){ el.classList.toggle('hide', !live); });
+  $('tools').classList.toggle('hide', !live);
+  if (live) renderSession(); else renderStart();
+  if (live && !ls('tl_hint')){
+    ls('tl_hint', '1');
+    toast('Tap ▶ to start a set, then ✓ when you finish. That second tap is what logs it.', true);
+  }
+}
+
+/* ---- start screen: pick a routine ---- */
+function renderStart(){
+  $('prog').textContent = '';
+  var h = setupBanner();
+  // The warm-up loads with every routine, so it is not something you choose
+  // here. Leaving it in the list also skewed which day counted as next up.
+  var progs = (DATA.program||[]).filter(function(r){ return !isWarmup(r.day); })
+    .map(function(r){
+      return { r:r, ago: r.lastDate ? daysBetween(r.lastDate, S.date) : 99999 };
+    });
+  var due = null, last = null;
+  progs.forEach(function(p){
+    if (!due || p.ago > due.ago) due = p;
+    if (p.r.lastDate && (!last || p.r.lastDate > last.r.lastDate)) last = p;
+  });
+
+  if (!progs.length && (DATA.program||[]).length){
+    h += '<div class="banner"><b>No routines yet</b>' +
+      '<span>Only the warm-up is set up, and that loads with whatever you pick. ' +
+      'Add a routine to get started.</span>' +
+      '<button class="go" data-routines="1">Edit routines</button></div>';
+  }
+  if (progs.length){
+    h += '<div class="lbl top">Routines <span style="text-transform:none;letter-spacing:0">' +
+         '&nbsp;— numbers read sets × reps × weight, from your last session</span></div>';
+    progs.forEach(function(p){
+      var isDue = due && p.r.day === due.r.day && p.ago > 0;
+      var isLast = last && p.r.day === last.r.day && !isDue;
+      var tag = isDue ? '<span class="tag next">Next up</span>'
+                      : (isLast ? '<span class="tag last">Just did this</span>' : '');
+      h += '<article class="card' + (isDue ? ' due' : (isLast ? ' recent' : '')) + '">' +
+           '<div class="chead"><h2>' + esc(p.r.day) + '</h2>' + tag +
+           '<span class="ago">' + esc(agoLabel(p.r.lastDate)) + '</span></div>' +
+           '<div class="plan">';
+      if (!p.r.items.length) h += '<div class="pl"><span class="pn pv none">No exercises yet</span></div>';
+      p.r.items.forEach(function(it){
+        var lbl = planLabel(buildRows(norm(it.name), it.sets));
+        h += '<div class="pl"><span class="pn">' + esc(it.name) + '</span>' +
+             '<span class="pv' + (lbl === 'no history' ? ' none' : '') + '">' + esc(lbl) + '</span></div>';
+      });
+      h += '</div><div class="rowfoot"><button class="go" data-start="' + esc(p.r.day) + '">Start</button></div></article>';
+    });
+  }
+
+  var recent = (DATA.sessions||[]).filter(function(s){ return s.date !== S.date; }).slice(0,2);
+  if (recent.length){
+    h += '<div class="lbl">Repeat a past session</div>';
+    recent.forEach(function(s){
+      var meta = [];
+      if (s.duration) meta.push(s.duration + ' min');
+      if (s.avgRest) meta.push(mmss(s.avgRest) + ' rest');
+      h += '<article class="card"><div class="chead"><h2>' + esc(shortDate(s.date)) + '</h2>' +
+           '<span class="ago">' + esc(agoLabel(s.date) + (meta.length ? ' · ' + meta.join(' · ') : '')) +
+           '</span></div><div class="plan">';
+      s.exercises.forEach(function(nm){
+        var lbl = planLabel(buildRows(norm(nm), 0));
+        h += '<div class="pl"><span class="pn">' + esc(nm) + '</span>' +
+             '<span class="pv' + (lbl === 'no history' ? ' none' : '') + '">' + esc(lbl) + '</span></div>';
+      });
+      h += '</div><div class="rowfoot"><button class="go alt" data-repeat="' + esc(s.date) + '">Start</button></div></article>';
+    });
+  }
+
+  h += '<div class="rowfoot" style="padding:4px 0 30px">' +
+       '<button class="mini" data-add="1">Empty session</button>' +
+       '<button class="mini" data-routines="1">Edit routines</button></div>';
+  $('view').innerHTML = h;
+}
+
+/* ---- session screen ---- */
+function renderSession(){
+  var t = totals();
+  $('vol').textContent = t.volume.toLocaleString();
+  $('setct').textContent = t.sets;
+  // average of the rests actually measured this session
+  var restsSoFar = [];
+  S.items.forEach(function(x){ x.rows.forEach(function(r){ if (r.done && r.rest) restsSoFar.push(r.rest); }); });
+  var avgRest = restsSoFar.length
+    ? Math.round(restsSoFar.reduce(function(a,b){ return a+b; },0) / restsSoFar.length) : 0;
+  $('finishBtn').textContent = t.sets ? 'Finish session' : 'Cancel session';
+  $('prog').textContent = (S.session > 1 ? 'Session ' + S.session + ' today · ' : '') +
+    t.done + ' of ' + t.planned + ' exercises' +
+    (t.skipped ? ' · ' + t.skipped + ' skipped' : '') +
+    (avgRest ? ' · avg rest ' + mmss(avgRest) : '');
+
+  // Track what was actually logged before each exercise, so the gap before its
+  // first set is only described when there is something to have rested from.
+  var before = {}, anyYet = false, lastWasWarm = false;
+  S.items.forEach(function(it){
+    before[it.key] = { any: anyYet, warm: lastWasWarm };
+    if (!it.skipped && it.rows.some(function(r){ return r.done; })){
+      anyYet = true;
+      lastWasWarm = !!it.warm;
+    }
+  });
+
+  var html = renderWarmCard();
+  S.items.filter(function(x){ return !x.warm; }).forEach(function(it){
+    var prev = prevOf(it.key);
+    var e = exFor(it.key);
+    var doneCount = it.rows.filter(function(r){ return r.done; }).length;
+    var allDone = doneCount > 0 && doneCount === it.rows.length;
+
+    html += '<article class="card' + (it.skipped ? ' skipped' : (allDone && !it.open ? ' allDone' : '')) +
+            '" data-key="' + esc(it.key) + '">';
+
+    if (it.skipped){
+      html += '<div class="summary"><b style="flex:1">' + esc(it.name) + '</b>' +
+              '<span class="v">skipped</span>' +
+              '<button class="mini" data-skip="' + esc(it.key) + '">undo</button></div></article>';
+      return;
+    }
+    if (allDone && !it.open){
+      html += '<div class="summary" data-open="' + esc(it.key) + '">' +
+              '<b style="flex:1">' + esc(it.name) + '</b>' +
+              '<span class="v">' + it.rows.map(function(r){ return esc(setStr(r)); }).join('  ') + '</span>' +
+              '</div></article>';
+      return;
+    }
+
+    html += '<div class="chead"><h2 data-hist="' + esc(it.key) + '">' + esc(it.name) + '</h2>' +
+            '<button class="ico" data-plates="' + esc(it.key) + '">plates</button>' +
+            '<button class="ico" data-timer="' + esc(it.key) + '">' + (restFor(it.key)/60) + 'm</button>' +
+            '<button class="ico" data-skip="' + esc(it.key) + '">skip</button>' +
+            '<button class="ico" data-kill="' + esc(it.key) + '">&times;</button></div>';
+
+    if (prev){
+      var pr2 = prev.sets.map(function(s){ return s.rest; }).filter(Boolean);
+      var avgp = pr2.length ? Math.round(pr2.reduce(function(a,b){ return a+b; },0)/pr2.length) : 0;
+      var when = (prev.date === S.date) ? 'earlier today' : shortDate(prev.date);
+      html += '<div class="prev">Last time, ' + esc(when) + ': &nbsp;<b>' +
+              prev.sets.map(function(s){ return esc(setStr(s)); }).join('&nbsp; ') + '</b>' +
+              (avgp ? ' &nbsp;·&nbsp; avg rest ' + esc(mmss(avgp)) : '') +
+              (function(){
+                var ws = prev.sets.map(function(s){ return s.work; }).filter(Boolean);
+                if (!ws.length) return '';
+                var av = Math.round(ws.reduce(function(a,b){ return a+b; },0)/ws.length);
+                return ' &nbsp;·&nbsp; sets took ' + esc(mmss(av));
+              })() +
+              (e && e.best ? ' &nbsp;·&nbsp; best ever ' + esc(e.best.reps + ' × ' + fmtW(e.best.weight)) : '') +
+              '</div>';
+    } else {
+      html += '<div class="prev">First time logging this</div>';
+    }
+
+    var cardio = (it.kind === 'cardio');
+    html += '<div class="grid"><div class="gh' + (cardio ? ' c3' : '') + '"><span>#</span><span>Prev / took</span>' +
+            (cardio ? '<span>Minutes</span><span>Avg bpm</span><span>Incline</span>'
+                    : '<span>Weight</span><span>Reps</span><span>Effort</span>') +
+            '<span></span></div>';
+
+    it.rows.forEach(function(r, i){
+      var p = prev && prev.sets[i];
+      // A row you have not touched should carry last time's numbers as real
+      // values, not as grey placeholder text you then have to retype.
+      if (!r.done && !r.t && p){
+        if (r.r === '' || r.r == null) r.r = p.reps;
+        if ((r.w === '' || r.w == null) && p.weight !== undefined && p.weight !== null) r.w = p.weight;
+        if ((r.dur === '' || r.dur == null) && p.duration) r.dur = p.duration;
+        if ((r.hr === '' || r.hr == null) && p.hr) r.hr = p.hr;
+        if ((r.inc === '' || r.inc == null) && p.incline) r.inc = p.incline;
+      }
+
+      var lbl = r.type === 'warm' ? 'W' : (r.type === 'fail' ? 'F' : (i+1));
+      var pr = isPr(e, r);
+      var fields = cardio
+        ? '<div class="cell"><input class="f-dur num" inputmode="decimal" placeholder="' +
+            (p && p.duration ? Math.round(p.duration/60) : 'min') + '" value="' +
+            esc(r.dur === '' ? '' : Math.round(r.dur/60)) + '"></div>' +
+          '<div class="cell"><input class="f-hr num" inputmode="numeric" placeholder="' +
+            (p && p.hr ? esc(p.hr) : 'bpm') + '" value="' + esc(r.hr) + '"></div>' +
+          '<div class="cell"><input class="f-inc num" inputmode="decimal" placeholder="' +
+            (p && p.incline ? esc(p.incline) : '–') + '" value="' + esc(r.inc) + '"></div>'
+        : '<div class="cell"><input class="f-w num" inputmode="decimal" placeholder="' +
+            (p ? esc(fmtW(p.weight)) : '–') + '" value="' + esc(r.w) + '"></div>' +
+          '<div class="cell"><input class="f-r num" inputmode="numeric" placeholder="' +
+            (p ? esc(p.reps) : '–') + '" value="' + esc(r.r) + '"></div>' +
+          '<div class="cell"><input class="f-rpe num" inputmode="decimal" placeholder="–" value="' + esc(r.rpe) + '"></div>';
+      // Rest lives between two sets, so show it there rather than as an average.
+      var pset = prev && prev.sets[i];
+      var mineR = r.rest ? (r.work ? '' : '~') + mmss(r.rest) : '';
+      var thenR = (pset && pset.rest) ? ((pset.work ? '' : '~') + mmss(pset.rest)) : '';
+      var lead = before[it.key] || { any:false, warm:false };
+      // Before set 1 the gap is the walk from whatever came before. If nothing
+      // did, there is no gap to report and last time's figure is meaningless.
+      if (i === 0 && !mineR && !lead.any) thenR = '';
+      if (mineR || thenR){
+        var bits = [];
+        if (mineR) bits.push('<b>rested ' + esc(mineR) + '</b>');
+        if (thenR) bits.push('last session ' + esc(thenR));
+        if (i === 0){
+          bits.push('<span class="since">since the ' +
+                    (lead.warm ? 'warm-up' : 'last exercise') + '</span>');
+        }
+        html += '<div class="gaprow">' + bits.join(' &nbsp;·&nbsp; ') + '</div>';
+      }
+      html += '<div class="gr ' + (cardio ? 'c3 ' : '') + r.type +
+        (r.done ? ' done' : (r.started ? ' running' : (r.t ? ' typed' : ''))) + '">' +
+        '<button class="setno" data-cycle="' + esc(it.key) + '" data-i="' + i + '">' + lbl + '</button>' +
+        (r.started
+          ? '<span class="ghost live">doing<span class="gw">tap ✓</span></span>'
+          : '<button class="ghost" data-copy="' + esc(it.key) + '" data-i="' + i + '">' +
+              (p ? esc(setStr(p)) : '—') +
+              (p && p.work ? '<span class="gw">' + esc(mmss(p.work)) + '</span>' : '') +
+            '</button>') + fields +
+        '<button class="tick' + (pr ? ' pr' : '') + (r.started ? ' running' : '') +
+          '" data-tick="' + esc(it.key) + '" data-i="' + i + '">' +
+          (r.done ? (pr ? '★' : '✓') : (r.started ? '✓' : '▶')) + '</button>' +
+      '</div>';
+    });
+
+    if (/~/.test(html.slice(-900)))
+      html += '<div class="gapnote">~ means the set itself is still inside that figure, ' +
+              'because Start set was not tapped</div>';
+    html += '</div><div class="rowfoot">' +
+      '<button class="mini" data-addrow="' + esc(it.key) + '">+ set</button>' +
+      (it.rows.length > 1 ? '<button class="mini" data-droprow="' + esc(it.key) + '">&minus; set</button>' : '') +
+      (allDone ? '<button class="mini" data-collapse="' + esc(it.key) + '" style="margin-left:auto">collapse</button>' : '') +
+    '</div>';
+    html += '<div class="noteline"><input class="f-note" placeholder="Note for this exercise" value="' + esc(it.note||'') + '"></div>';
+    html += '</article>';
+  });
+
+  $('view').innerHTML = html;
+}
+
+/**
+ * If the Log sheet is empty there is no history to prefill from, which looks
+ * exactly like a broken app. Say so, and offer the one-tap fix.
+ */
+function setupBanner(){
+  var st = DATA && DATA.status;
+  if (!st) return '';
+  if (st.logRows > 0){
+    if (!warmRoutine()){
+      return '<div class="banner"><b>Warm-up not set up yet</b>' +
+        '<span>Your five-move warm-up would load with every routine.</span>' +
+        '<button class="go" data-seedwarm="1">Add my warm-up</button></div>';
+    }
+    return '';
+  }
+  return '<div class="banner"><b>Nothing logged yet</b>' +
+    '<span>Numbers will start filling in once you have logged a session.</span></div>';
+}
+
+/** All five warm-up moves in one compact block, not five full cards. */
+function renderWarmCard(){
+  var warm = S.items.filter(function(x){ return x.warm; });
+  if (!warm.length) return '';
+  var total = 0, done = 0;
+  warm.forEach(function(it){ it.rows.forEach(function(r){ total++; if (r.done) done++; }); });
+  var all = done === total;
+
+  var h = '<article class="card warmcard' + (all ? ' allDone' : '') + '">' +
+    '<div class="chead"><h2>Warm-up</h2>' +
+    '<span class="ago">' + done + '/' + total + '</span>' +
+    (all ? '<button class="ico" data-warmclear="1">undo</button>'
+         : '<button class="ico" data-warmall="1">all done</button>') +
+    '</div><div class="wgrid">';
+
+  warm.forEach(function(it){
+    var timed = (it.unit === 'sec');
+    it.rows.forEach(function(r, i){
+      var label = esc(it.name) + (it.rows.length > 1 ? ' ' + (i+1) : '');
+      h += '<div class="wrow ' + (r.done ? 'done' : '') + '" data-key="' + esc(it.key) + '">' +
+        '<span class="wn">' + label + '</span>' +
+        '<div class="cell wc"><input class="f-w num" inputmode="decimal" placeholder="–" value="' +
+          esc(r.w) + '"' + (timed ? ' disabled' : '') + '></div>' +
+        '<div class="cell wc"><input class="f-r num" inputmode="numeric" placeholder="–" value="' +
+          esc(r.r) + '"></div>' +
+        '<span class="wu">' + (timed ? 'sec' : (r.w === '' ? 'reps' : 'lb')) + '</span>' +
+        (timed && !r.done
+          ? '<button class="mini wt" data-hold="' + esc(it.key) + '" data-sec="' + (r.r || 60) + '">hold</button>'
+          : '<span class="wt-gap"></span>') +
+        '<button class="tick" data-tick="' + esc(it.key) + '" data-i="' + i + '">✓</button>' +
+      '</div>';
+    });
+  });
+  return h + '</div></article>';
+}
+
+/* ---- progress tab ---- */
+var PROG = null;
+
+function renderProgress(){
+  if (!PROG){
+    $('view').innerHTML = '<div class="empty">Reading your log…</div>';
+    google.script.run
+      .withSuccessHandler(function(p){ PROG = p; if (TAB === 'prog') renderProgress(); })
+      .withFailureHandler(function(){ $('view').innerHTML = '<div class="empty">Could not read the log.</div>'; })
+      .progress(16);
+    return;
+  }
+  var p = PROG;
+  var h = '';
+
+  /* how often you train */
+  h += '<div class="lbl top">How often you train</div>';
+  h += '<div class="statrow">' +
+       '<div class="bigstat"><b class="num">' + p.last28 + '</b><span>sessions<br>last 4 weeks</span></div>' +
+       '<div class="bigstat"><b class="num">' + p.perWeek28 + '</b><span>per week<br>on average</span></div>' +
+       '<div class="bigstat"><b class="num">' + (p.daysSince === null ? '–' : p.daysSince) +
+         '</b><span>days since<br>you trained</span></div></div>';
+
+  var peak = 1;
+  p.weeks.forEach(function(w){ if (w.sessions > peak) peak = w.sessions; });
+
+  // A gridline and a label for every whole session count, so the height of a
+  // bar can be read off rather than guessed at.
+  var lines = '';
+  for (var g = 0; g <= peak; g++){
+    var bottom = (g / peak) * 100;
+    lines += '<i style="bottom:' + bottom + '%"></i>';
+  }
+  var yl = '';
+  for (var g2 = 0; g2 <= peak; g2++){
+    yl += '<span style="bottom:calc(' + ((g2 / peak) * 100) + '% - 6px)">' + g2 + '</span>';
+  }
+
+  h += '<div class="chead2"><b>Sessions per week</b><span>each bar is one week</span></div>';
+  h += '<div class="chartwrap"><div class="yaxis">' + yl + '</div><div class="chart">' +
+       '<div class="chartgrid">' + lines + '</div>';
+  var lastMonth = '';
+  p.weeks.forEach(function(w){
+    var pct = (w.sessions / peak) * 100;
+    var mon = w.week.slice(0,7);
+    var label = (mon !== lastMonth) ? monthName(w.week) : '';
+    lastMonth = mon;
+    h += '<div class="col">' +
+         '<span class="cnum">' + (w.sessions || '') + '</span>' +
+         '<div class="barwrap"><div class="bar' + (w.sessions ? '' : ' none') +
+           '" style="height:' + (w.sessions ? Math.max(pct, 4) : 2) + '%"></div></div>' +
+         '<span class="cl">' + esc(label) + '</span></div>';
+  });
+  h += '</div></div>';
+  h += '<div class="hint" style="padding:8px 2px 18px">' +
+       'Weeks run Monday to Sunday. ' + p.trainingDays +
+       ' training days logged since ' + esc(shortDate(p.firstDay)) + '.</div>';
+
+  /* what you have been parked on */
+  h += '<div class="lbl">Same weight for a while</div>';
+  if (!p.stuck.length){
+    h += '<div class="empty">Not enough history yet.</div>';
+  } else {
+    h += '<div class="hint" style="padding:0 2px 10px">Sorted by how many sessions you have ' +
+         'spent on the weight you are using now.</div>';
+    p.stuck.slice(0, 15).forEach(function(e){
+      var months = e.days >= 60 ? Math.round(e.days/30) + ' months' : e.days + ' days';
+      h += '<div class="srow2">' +
+        '<div class="sn">' + esc(e.name) +
+          (e.below ? '<span class="under">below your best ' + esc(e.best) + '</span>' : '') + '</div>' +
+        '<div class="sw num">' + esc(fmtW(e.weight)) + '</div>' +
+        '<div class="sm"><b>' + e.atWeight + '</b> session' + (e.atWeight>1?'s':'') +
+          '<br>' + esc(months) + '</div></div>';
+    });
+  }
+  $('view').innerHTML = h;
+}
+
+/* ---- exercises tab ---- */
+function renderLibrary(){
+  var st = (DATA && DATA.status) || {};
+  var h = '<div class="srch"><input id="libq" placeholder="Search exercises" value="' + esc(LIBQ) + '"></div>' +
+          '<div id="libl"></div>' +
+          '<button class="mini" data-diag="1" style="width:100%;margin-top:16px">Sheet status</button>';
+  $('view').innerHTML = h;
+  $('libq').addEventListener('input', function(){ LIBQ = this.value; libList(); });
+  libList();
+}
+function libList(){
+  var q = norm(LIBQ);
+  var list = (DATA.exercises||[]).filter(function(e){ return !q || e.key.indexOf(q) !== -1; });
+  if (!list.length){ $('libl').innerHTML = '<div class="empty">Nothing matches.</div>'; return; }
+  $('libl').innerHTML = list.map(function(e){
+    var last = e.recent[0];
+    return '<button class="lex" data-hist="' + esc(e.key) + '">' +
+      '<div class="n">' + esc(e.name) + '</div>' +
+      '<div class="m">' + esc(agoLabel(e.lastDate)) + ' &nbsp;·&nbsp; ' + e.count + ' sessions' +
+      (e.best ? ' &nbsp;·&nbsp; best ' + esc(e.best.reps + ' × ' + fmtW(e.best.weight)) : '') +
+      (last ? '<br>' + esc(last.sets.map(setStr).join('  ')) : '') +
+      '</div></button>';
+  }).join('');
+}
+
+/* ------------------------------------------------------------- routines */
+var EDIT = null, EDITI = -1;
+
+function cloneProgram(){
+  return (DATA.program||[]).map(function(r){
+    return { day:r.day, lastDate:r.lastDate, items:(r.items||[]).map(function(i){
+      return { name:i.name, sets:i.sets }; }) };
+  });
+}
+function showRoutines(reload){
+  if (reload || !EDIT) EDIT = cloneProgram();
+  EDITI = -1;
+  var h = '<h3>Routines</h3><div class="sub">The one you have gone longest without is ' +
+    'highlighted on the Log tab. The warm-up is not listed there because it loads ' +
+    'with every routine; edit it here.</div>';
+  if (!EDIT.length) h += '<div class="sub">None yet.</div>';
+  EDIT.forEach(function(r,i){
+    var warm = isWarmup(r.day);
+    h += '<div class="hrow2"><span class="d">' +
+         (warm ? '' : esc(agoLabel(r.lastDate)).replace(' ago','')) + '</span>' +
+         '<span class="s" style="flex:1">' + esc(r.day) +
+         (warm ? '<br><span style="font-size:10px;color:var(--dim)">loads with every routine</span>' : '') +
+         '</span>' +
+         '<span class="e">' + r.items.length + ' ex</span>' +
+         '<button class="mini" data-redit="' + i + '">edit</button></div>';
+  });
+  h += '<div class="plates"><button class="plate" data-rnew="1">+ New routine</button></div>';
+  openSheet(h + '<button class="close" data-close="1">Close</button>');
+}
+var ADDED = null;
+
+/** The one path that puts an exercise into a routine. */
+function addToRoutine(name){
+  var nm = String(name || '').trim();
+  if (!nm) return;
+  syncEditor();
+  var items = EDIT[EDITI].items;
+  for (var i = 0; i < items.length; i++){
+    if (norm(items[i].name) === norm(nm)){
+      toast(nm + ' is already in this routine');
+      return;
+    }
+  }
+  items.push({ name:nm, sets:0, reps:0, weight:null });
+  ADDED = items.length - 1;
+  showRoutine(EDITI);
+}
+
+function syncEditor(){
+  if (EDITI < 0 || !EDIT[EDITI]) return;
+  var nm = $('rname');
+  if (nm) EDIT[EDITI].day = nm.value.trim() || EDIT[EDITI].day;
+  $$('#sheetBody .f-sets').forEach(function(b, i){
+    if (EDIT[EDITI].items[i]) EDIT[EDITI].items[i].sets = Number(b.value) || 0;
+  });
+}
+function showRoutine(i){
+  EDITI = i;
+  var r = EDIT[i];
+  var h = '<h3>Edit routine</h3><div class="sub">Order here is the order they load into a session.</div>';
+  h += '<div class="fieldrow"><label>Name</label><input id="rname" style="width:auto;flex:1;text-align:left" value="' + esc(r.day) + '"></div>';
+  r.items.forEach(function(it, j){
+    h += '<div class="hrow2">' +
+         '<button class="mini" data-rup="' + j + '"' + (j===0?' style="visibility:hidden"':'') + '>&uarr;</button>' +
+         '<span class="s" style="flex:1">' + esc(it.name) + '</span>' +
+         '<input class="f-sets num" inputmode="numeric" value="' + (it.sets || '') + '" placeholder="–" ' +
+         'style="width:46px;background:var(--card2);border:1px solid var(--line);border-radius:7px;padding:7px 0;text-align:center;outline:none">' +
+         '<button class="mini" data-rrm="' + j + '">&times;</button></div>';
+  });
+  h += '<div class="sub" style="margin-top:8px">Blank sets means: match whatever you did last time.</div>';
+  var already = {};
+  r.items.forEach(function(it){ already[norm(it.name)] = true; });
+  var choices = (DATA.exercises||[]).filter(function(e){ return !already[e.key]; });
+  h += '<select id="radd" class="f" style="-webkit-appearance:none;appearance:none">' +
+       '<option value="">' + (choices.length ? 'Add an exercise…' : 'Everything is already in this routine') + '</option>' +
+       choices.map(function(e){ return '<option value="' + esc(e.name) + '">' + esc(e.name) + '</option>'; }).join('') +
+       '</select>';
+  h += '<div class="addrow"><input id="rnewex" class="f" placeholder="or type a new exercise name">' +
+       '<button class="plate" data-raddnew="1">Add</button></div>';
+  h += '<div class="plates" style="margin-top:8px">' +
+       '<button class="plate" data-rsave="1" style="border-color:var(--amber);color:var(--amber)">Save to sheet</button>' +
+       '<button class="plate" data-rback="1">Back</button>' +
+       '<button class="plate" data-rdel="1" style="color:var(--red)">Delete</button></div>';
+  openSheet(h, ADDED !== null);
+  if (ADDED !== null){
+    var marks = $$('#sheetBody .hrow2');
+    if (marks[ADDED]){
+      marks[ADDED].classList.add('justadded');
+      marks[ADDED].scrollIntoView ? marks[ADDED].scrollIntoView({block:'nearest'}) : 0;
+    }
+    ADDED = null;
+  }
+
+  $('radd').addEventListener('change', function(){ addToRoutine(this.value); });
+  $('rnewex').addEventListener('keydown', function(ev){
+    if (ev.key === 'Enter') addToRoutine(this.value);
+  });
+}
+function persistRoutines(done){
+  syncEditor();
+  var payload = EDIT.map(function(r){
+    return { day:r.day, items:r.items.map(function(i){ return { name:i.name, sets:i.sets }; }) };
+  });
+  google.script.run
+    .withSuccessHandler(function(){
+      DATA.program = EDIT.map(function(r){
+        return { day:r.day, lastDate:r.lastDate, items:r.items.map(function(i){
+          return { name:i.name, sets:i.sets }; }) };
+      });
+      renderApp();
+      if (done) done();
+    })
+    .withFailureHandler(function(){ toast('Could not save. Check your connection.'); })
+    .saveProgram(payload);
+}
+function saveRoutines(){
+  persistRoutines(function(){
+    closeSheet();
+    toast('Routines saved to the Training tab');
+  });
+}
+
+/* ---------------------------------------------------------- bottom sheet */
+function openSheet(html, keepScroll){
+  var box = $('sheetBody');
+  var at = keepScroll ? box.scrollTop : 0;
+  box.innerHTML = html;
+  $('sheet').classList.add('on');
+  if (keepScroll) box.scrollTop = at;
+}
+function closeSheet(){ $('sheet').classList.remove('on'); }
+
+function showAdd(){
+  openSheet('<h3>Add an exercise</h3><div class="sub">Numbers come from your last session.</div>' +
+    '<input id="axq" class="f" placeholder="Search or type a new name" autocomplete="off">' +
+    '<div id="axl"></div><button class="close" data-close="1">Close</button>');
+  $('axq').addEventListener('input', axList);
+  axList();
+}
+function axList(){
+  var raw = $('axq') ? $('axq').value.trim() : '';
+  var q = norm(raw);
+  var list = (DATA.exercises||[]).filter(function(e){ return !q || e.key.indexOf(q) !== -1; }).slice(0, 30);
+  var h = list.map(function(e){
+    var lbl = planLabel(buildRows(e.key, 0));
+    return '<div class="hrow2"><span class="s" style="flex:1">' + esc(e.name) +
+      '<br><span style="font-size:11px;color:var(--dim)">' + esc(lbl) + '</span></span>' +
+      '<button class="mini" data-pick="' + esc(e.name) + '">add</button></div>';
+  }).join('');
+  if (raw && !(DATA.exercises||[]).some(function(e){ return e.key === q; })){
+    h += '<div class="hrow2"><span class="s" style="flex:1">Create “' + esc(raw) + '”</span>' +
+         '<button class="mini" data-pick="' + esc(raw) + '">add</button></div>';
+  }
+  $('axl').innerHTML = h || '<div class="sub" style="padding-top:10px">Nothing matches.</div>';
+}
+
+var DIAG = null;
+
+function showDiag(){
+  if (!DIAG){
+    openSheet('<h3>Sheet status</h3><div class="sub">Checking…</div>');
+    google.script.run
+      .withSuccessHandler(function(d){ DIAG = d; showDiag(); })
+      .withFailureHandler(function(){ DIAG = { repair:null, integrity:null }; showDiag(); })
+      .diagnostics();
+    return;
+  }
+  var st = (DATA && DATA.status) || {};
+  function line(label, val, warn){
+    return '<div class="hrow2"><span class="s" style="flex:1">' + esc(label) + '</span>' +
+           '<span class="e"' + (warn ? ' style="color:var(--amber)"' : '') + '>' + esc(val) + '</span></div>';
+  }
+  var h = '<h3>Sheet status</h3><div class="sub">Where your data actually is right now.</div>';
+  h += line('App version', st.version || '?');
+  h += line('Log rows (one per set)', st.logRows === -1 ? 'no Log tab' : st.logRows,
+            !st.logRows || st.logRows < 1);
+  h += line('Sessions rows', st.sessionRows === -1 ? 'no Sessions tab' : st.sessionRows);
+  h += line('Training rows (routines)', st.programRows === -1 ? 'no Training tab' : st.programRows);
+  h += line('Exercises with history', (DATA.exercises||[]).length, !(DATA.exercises||[]).length);
+  h += line('Warm-up configured', warmRoutine() ? 'yes' : 'no', !warmRoutine());
+  var ig = DIAG && DIAG.integrity;
+  if (ig){
+    h += line('Log rows check', ig.healthy ? 'looks right' : ig.badId + ' rows with a wrong ID',
+              !ig.healthy);
+    if (!ig.healthy && ig.badVolume) h += line('Volume mismatches', ig.badVolume, true);
+    h += line('Logged in the app so far', ig.loggedInApp);
+  }
+  var rp = DIAG && DIAG.repair;
+  if (rp && rp.groups) h += line('Under-recorded old sessions', rp.groups + ' to review', true);
+  if (rp && rp.voidGroups) h += line('Exercises marked not done', rp.voidGroups + ' to remove', true);
+  h += '<div class="sub" style="margin-top:14px">Tabs: ' + esc((st.sheets||[]).join(', ')) + '</div>';
+  h += '<div class="sub">Rest between sets is column K of the Log tab, in seconds.</div>';
+  var btns = [];
+  if (rp && (rp.groups || rp.voidGroups))
+    btns.push('<button class="plate" data-repair="1" style="border-color:var(--amber);color:var(--amber)">Review history fixes</button>');
+  btns.push('<button class="plate" data-selftest="1">Run the self test</button>');
+  btns.push('<button class="plate" data-backfill="1">Recalculate all rest times</button>');
+  btns.push('<button class="plate" data-sortlog="1">Tidy the Log order</button>');
+  h += '<div class="plates">' + btns.join('') + '</div>';
+  openSheet(h + '<button class="close" data-close="1">Close</button>');
+}
+
+/** Shows what the repair would do, before it does anything. */
+function showSelfTest(r){
+  var h = '<h3>' + (r.ok ? 'Everything works' : 'Something is wrong') + '</h3>' +
+    '<div class="sub">A throwaway set is written, read back and deleted. ' +
+    'If logging is broken, the step that fails tells you where.</div>';
+  r.steps.forEach(function(s){
+    h += '<div class="hrow2"><span class="d" style="color:' +
+         (s.ok ? 'var(--green)' : 'var(--red)') + '">' + (s.ok ? 'ok' : 'FAIL') + '</span>' +
+         '<span class="s" style="flex:1;font-family:Inter,sans-serif;font-size:12px">' +
+         esc(s.name) + '<br><span style="color:var(--dim)">' + esc(s.result) + '</span></span></div>';
+  });
+  openSheet(h + '<button class="close" data-close="1">Close</button>');
+}
+
+function showRepair(){
+  var rp = DIAG && DIAG.repair;
+  if (!rp || (!rp.groups && !rp.voidGroups)){ toast('Nothing to fix.'); return; }
+  var h = '<h3>History fixes</h3>';
+  if (rp.groups){
+    h += '<div class="sub">On these days you filled in one set but wrote how many you really did. ' +
+      'Copying that set out to the number your note claims would add <b>' + rp.setsToAdd +
+      '</b> sets across <b>' + rp.groups + '</b> exercises. ' +
+      'Added rows carry no time, so they never invent rest values, and each one says where it came from. ' +
+      'Nothing already recorded is changed.</div>';
+  }
+  rp.items.slice(0, 12).forEach(function(f){
+    h += '<div class="hrow2"><span class="d">' + esc(shortDate(f.date)) + '</span>' +
+         '<span class="s" style="flex:1">' + esc(f.name) +
+         '<br><span style="font-size:11px;color:var(--dim)">' +
+         esc(f.reps + (f.weight === '' ? '' : ' × ' + fmtW(f.weight))) + ' &nbsp;·&nbsp; “' +
+         esc(String(f.note).slice(0,40)) + '”</span></span>' +
+         '<span class="e">' + f.logged + ' → ' + f.declared + '</span></div>';
+  });
+  if (rp.items.length > 12)
+    h += '<div class="sub" style="margin-top:10px">and ' + (rp.items.length - 12) + ' more</div>';
+  h += '<div class="plates" style="margin-top:14px">' +
+    (rp.setsToAdd ? '<button class="plate" data-dorepair="1" style="border-color:var(--amber);color:var(--amber)">Add the ' +
+      rp.setsToAdd + ' sets</button>' : '') +
+    (rp.rowsToDrop ? '<button class="plate" data-dovoid="1" style="border-color:var(--red);color:var(--red)">Remove the ' +
+      rp.rowsToDrop + ' skipped rows</button>' : '') +
+    '<button class="plate" data-close="1">Leave it</button></div>';
+
+  if (rp.voids && rp.voids.length){
+    h += '<div class="sub" style="margin-top:18px">Marked “didn’t do”: ' + rp.voidGroups +
+         ' exercises, ' + rp.rowsToDrop + ' rows. These were copied in from your routine ' +
+         'and never performed, so every set on that exercise that day is removed.</div>';
+    rp.voids.slice(0, 10).forEach(function(v){
+      h += '<div class="hrow2"><span class="d">' + esc(shortDate(v.date)) + '</span>' +
+           '<span class="s" style="flex:1">' + esc(v.name) + '</span>' +
+           '<span class="e">' + v.rows + ' row' + (v.rows > 1 ? 's' : '') + '</span></div>';
+    });
+    if (rp.voids.length > 10)
+      h += '<div class="sub" style="margin-top:8px">and ' + (rp.voids.length - 10) + ' more</div>';
+  }
+  openSheet(h);
+}
+
+function showHistory(key){
+  var e = exFor(key);
+  if (!e) { toast('No history yet'); return; }
+  var h = '<h3>' + esc(e.name) + '</h3><div class="sub">' + e.count + ' sessions' +
+    (e.best ? ' · best ' + esc(e.best.reps + ' × ' + fmtW(e.best.weight)) + ' on ' + esc(shortDate(e.best.date)) : '') +
+    '</div>';
+  e.recent.forEach(function(s){
+    var top = null;
+    s.sets.forEach(function(st){ var v = e1rm(st.weight, st.reps); if (v !== null && (top === null || v > top)) top = v; });
+    // Each set with the rest that came before it, so a variable session reads correctly.
+    var seq = s.sets.map(function(st, i){
+      var r = (i > 0 && st.rest) ? '<span class="gapin">' + esc(mmss(st.rest)) + '</span>' : '';
+      var w = st.work ? '<span class="workin">' + esc(mmss(st.work)) + '</span>' : '';
+      return r + esc(setStr(st)) + w;
+    }).join('');
+    h += '<div class="hrow2"><span class="d">' + esc(shortDate(s.date)) + '</span>' +
+         '<span class="s">' + seq + '</span>' +
+         '<span class="e">' + (top !== null ? 'e1RM ' + Math.round(top) : '') + '</span></div>';
+  });
+  var notes = [];
+  e.recent.forEach(function(s){ s.sets.forEach(function(st){
+    if (st.note) notes.push(shortDate(s.date) + ': ' + st.note);
+  }); });
+  if (notes.length){
+    h += '<div class="sub" style="margin-top:14px">Notes</div>';
+    notes.slice(0,6).forEach(function(t){ h += '<div class="hrow2"><span style="font-size:12px">' + esc(t) + '</span></div>'; });
+  }
+  openSheet(h + '<button class="close" data-close="1">Close</button>');
+}
+
+function showPlates(key){
+  var it = itemFor(key), target = 0;
+  var card = sel(key);
+  if (card){
+    var inputs = card.querySelectorAll('.f-w');
+    for (var i=inputs.length-1;i>=0;i--){ var v = n(inputs[i].value); if (v){ target = v; break; } }
+  }
+  openSheet('<h3>Plate loading</h3><div class="sub">' + esc(it ? it.name : '') + '</div>' +
+    '<div class="fieldrow"><label>Target</label><input id="plTarget" class="num" value="' + target + '">' +
+    '<label>Bar</label><input id="plBar" class="num" value="45"></div>' +
+    '<div class="plates" id="plOut"></div><button class="close" data-close="1">Close</button>');
+  calcPlates();
+  $('plTarget').addEventListener('input', calcPlates);
+  $('plBar').addEventListener('input', calcPlates);
+}
+function calcPlates(){
+  var target = n($('plTarget').value) || 0;
+  var bar = n($('plBar').value) || 0;
+  var per = (target - bar) / 2;
+  var out = $('plOut');
+  if (per < 0){ out.innerHTML = '<span class="plate">Below bar weight</span>'; return; }
+  var left = per, parts = [];
+  [45,35,25,10,5,2.5].forEach(function(s){
+    var c = Math.floor(left / s);
+    if (c > 0){ parts.push(c + ' × ' + s); left = Math.round((left - c*s)*100)/100; }
+  });
+  var h = parts.map(function(p){ return '<span class="plate">' + p + '</span>'; }).join('');
+  h += '<span class="plate" style="color:var(--dim)">' + (Math.round(per*100)/100) + ' per side</span>';
+  if (left > 0.01) h += '<span class="plate" style="color:var(--red)">' + left + ' short</span>';
+  out.innerHTML = h || '<span class="plate">Bar only</span>';
+}
+
+function showTimer(key){
+  var cur = restFor(key);
+  var h = '<h3>Rest for this exercise</h3><div class="sub">Starts automatically after each working set</div><div class="plates">';
+  [60,90,120,150,180,240,300].forEach(function(o){
+    h += '<button class="plate" data-setrest="' + esc(key) + '" data-sec="' + o + '"' +
+         (o === cur ? ' style="border-color:var(--amber);color:var(--amber)"' : '') + '>' + (o/60) + ' min</button>';
+  });
+  openSheet(h + '</div><button class="close" data-close="1">Close</button>');
+}
+
+/* ------------------------------------------------------------------ events */
+document.addEventListener('click', function(ev){
+  if (!ev.target.closest) return;
+  var t = ev.target.closest('[data-tick],[data-cycle],[data-copy],[data-kill],[data-addrow],' +
+    '[data-droprow],[data-collapse],[data-open],[data-hist],[data-plates],[data-timer],[data-skip],' +
+    '[data-start],[data-repeat],[data-adj],[data-close],[data-setrest],[data-routines],[data-add],' +
+    '[data-finish],[data-finishnow],[data-tickall],[data-pick],[data-tab],[data-redit],'+
+    '[data-warmall],[data-warmclear],[data-hold],[data-seedwarm],[data-diag],'+
+    '[data-repair],[data-dorepair],[data-dovoid],[data-selftest],[data-backfill],[data-sortlog],'+
+    '[data-rnew],[data-rrm],[data-rup],' +
+    '[data-rsave],[data-rback],[data-rdel],[data-raddnew],#restStop');
+  if (!t) return;
+  var d = t.dataset || {};
+
+  if (t.id === 'restStop') return rest.working ? cancelWork() : stopRest();
+  if (d.tab){ TAB = d.tab; return renderApp(); }
+  if (d.close) return closeSheet();
+  if (d.add){ return showAdd(); }
+  if (d.pick){ addExercise(d.pick, 0); closeSheet(); TAB = 'log'; return renderApp(); }
+  if (d.finish) return confirmFinish();
+  if (d.finishnow) return finishSession();
+  if (d.tickall) return tickAllPending();
+  if (d.start) return startRoutine(d.start);
+  if (d.repeat) return startFromSession(d.repeat);
+  if (d.routines) return showRoutines(true);
+  if (d.setrest){ setRestFor(d.setrest, Number(d.sec)); closeSheet(); renderApp(); return; }
+  if (d.adj){
+    if (!S.rest) return;
+    S.rest.target = Math.max(30, S.rest.target + Number(d.adj));
+    S.rest.beeped = restElapsed() >= S.rest.target;
+    store();
+    $('rwho').textContent = (S.rest.label ? S.rest.label + ' · ' : '') + 'target ' + mmss(S.rest.target);
+    paintRest();
+    return;
+  }
+  if (d.seedwarm){
+    t.textContent = 'Adding…';
+    google.script.run
+      .withSuccessHandler(function(){ reload(function(){ toast('Warm-up added.'); }); })
+      .withFailureHandler(function(){ toast('Could not add the warm-up.'); renderApp(); })
+      .seedWarmup();
+    return;
+  }
+  if (d.warmall) return warmAll(true);
+  if (d.warmclear) return warmAll(false);
+  if (d.hold){
+    var hit = itemFor(d.hold);
+    startRest(Number(d.sec) || 60, (hit ? hit.name : 'Hold'));
+    return;
+  }
+  if (d.tick) return toggleSet(d.tick, Number(d.i));
+  if (d.cycle) return cycleType(d.cycle, Number(d.i));
+  if (d.copy) return copyPrev(d.copy, Number(d.i));
+  if (d.skip) return skipExercise(d.skip);
+  if (d.kill) return removeExercise(d.kill);
+  if (d.addrow) return addRow(d.addrow);
+  if (d.droprow) return dropRow(d.droprow);
+  if (d.collapse){ var a = itemFor(d.collapse); if (a){ a.open = false; store(); renderApp(); } return; }
+  if (d.open){ var b = itemFor(d.open); if (b){ b.open = true; store(); renderApp(); } return; }
+  if (d.diag) return showDiag();
+  if (d.sortlog){
+    t.textContent = 'Sorting…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        closeSheet();
+        toast('Log sorted by date, session and time: ' + (res && res.rows) + ' rows.');
+      })
+      .withFailureHandler(function(){ toast('Could not sort.'); renderApp(); })
+      .sortLog();
+    return;
+  }
+  if (d.backfill){
+    t.textContent = 'Working…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        DIAG = null;
+        closeSheet();
+        reload(function(){
+          toast('Rest recalculated across ' + (res && res.rows) + ' sets. ' +
+                (res && res.filled) + ' now carry a value.');
+        });
+      })
+      .withFailureHandler(function(){ toast('Could not recalculate.'); renderApp(); })
+      .backfillRest();
+    return;
+  }
+  if (d.selftest){
+    t.textContent = 'Testing…';
+    google.script.run
+      .withSuccessHandler(showSelfTest)
+      .withFailureHandler(function(e){ toast('Self test could not run: ' + (e && e.message)); })
+      .selfTest();
+    return;
+  }
+  if (d.repair) return showRepair();
+  if (d.dovoid){
+    t.textContent = 'Working…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        DIAG = null;
+        closeSheet();
+        reload(function(){
+          toast('Removed ' + (res && res.removed) + ' rows from ' + (res && res.groups) + ' skipped exercises.');
+        });
+      })
+      .withFailureHandler(function(){ toast('Could not remove them.'); renderApp(); })
+      .applyVoidRemoval();
+    return;
+  }
+  if (d.dorepair){
+    t.textContent = 'Working…';
+    google.script.run
+      .withSuccessHandler(function(res){
+        DIAG = null;
+        closeSheet();
+        reload(function(){
+          toast('Added ' + (res && res.added) + ' sets across ' + (res && res.groups) + ' exercises.');
+        });
+      })
+      .withFailureHandler(function(){ toast('Could not apply the fix.'); renderApp(); })
+      .applySetRepair();
+    return;
+  }
+  if (d.hist) return showHistory(d.hist);
+  if (d.plates) return showPlates(d.plates);
+  if (d.timer) return showTimer(d.timer);
+
+  if (d.redit) return showRoutine(Number(d.redit));
+  if (d.raddnew) return addToRoutine($('rnewex') ? $('rnewex').value : '');
+  if (d.rback) return showRoutines(false);
+  if (d.rsave) return saveRoutines();
+  if (d.rnew){
+    if (!EDIT) EDIT = cloneProgram();
+    EDIT.push({ day:'Day ' + (EDIT.length + 1), items:[], lastDate:'' });
+    return showRoutine(EDIT.length - 1);
+  }
+  if (d.rdel){
+    syncEditor();
+    var gone = EDIT[EDITI] ? EDIT[EDITI].day : '';
+    EDIT.splice(EDITI, 1);
+    EDITI = -1;
+    return persistRoutines(function(){
+      showRoutines(false);
+      toast(gone ? gone + ' deleted' : 'Routine deleted');
+    });
+  }
+  if (d.rrm){ syncEditor(); EDIT[EDITI].items.splice(Number(d.rrm), 1); return showRoutine(EDITI); }
+  if (d.rup){
+    syncEditor();
+    var j = Number(d.rup), arr = EDIT[EDITI].items;
+    if (j > 0){ var tmp = arr[j-1]; arr[j-1] = arr[j]; arr[j] = tmp; }
+    return showRoutine(EDITI);
+  }
+});
+
+$('sheet').addEventListener('click', function(ev){ if (ev.target === this) closeSheet(); });
+
+/**
+ * Editing a set you have already logged has to reach the sheet too. Typing an
+ * effort score after ticking the set is the common case. Debounced so a call
+ * does not fire on every keystroke.
+ */
+var editTimers = {};
+function pushSoon(it){
+  clearTimeout(editTimers[it.key]);
+  editTimers[it.key] = setTimeout(function(){
+    delete editTimers[it.key];
+    if (itemFor(it.key)) push(it);          // still in this session
+  }, 700);
+}
+
+/* keep typed values in state without re-rendering, which would steal focus */
+document.addEventListener('input', function(ev){
+  if (!ev.target.closest) return;
+  var wrow = ev.target.closest('.wrow');
+  if (wrow){
+    var wit = itemFor(wrow.dataset.key);
+    if (!wit) return;
+    var wsibs = Array.prototype.filter.call(
+      wrow.parentNode.querySelectorAll('.wrow'),
+      function(x){ return x.dataset.key === wrow.dataset.key; });
+    var wi = Array.prototype.indexOf.call(wsibs, wrow);
+    var wr = wit.rows[wi];
+    if (!wr) return;
+    var wv = wrow.querySelector('.f-w').value.trim();
+    var rv2 = wrow.querySelector('.f-r').value.trim();
+    wr.w = (wv === '' ? '' : (n(wv) === null ? wv : n(wv)));
+    wr.r = (rv2 === '' ? '' : (n(rv2) === null ? rv2 : n(rv2)));
+    wr.t = true;
+    store();
+    if (wr.done) pushSoon(wit);
+    return;
+  }
+  var card = ev.target.closest('.card');
+  if (!card || !card.dataset.key) return;
+  var it = itemFor(card.dataset.key);
+  if (!it) return;
+  if (ev.target.classList.contains('f-note')){ it.note = ev.target.value; store(); return; }
+  var gr = ev.target.closest('.gr');
+  if (!gr) return;
+  var idx = Array.prototype.indexOf.call(card.querySelectorAll('.gr'), gr);
+  var row = it.rows[idx];
+  if (!row) return;
+  if (it.kind === 'cardio'){
+    var mv = gr.querySelector('.f-dur').value.trim();
+    row.dur = mv === '' ? '' : Math.round((n(mv) || 0) * 60);
+    row.hr = gr.querySelector('.f-hr').value.trim();
+    row.inc = gr.querySelector('.f-inc').value.trim();
+  } else {
+    var wv = gr.querySelector('.f-w').value.trim();
+    var rv = gr.querySelector('.f-r').value.trim();
+    row.w = (wv === '' ? '' : (n(wv) === null ? wv : n(wv)));
+    row.r = (rv === '' ? '' : (n(rv) === null ? rv : n(rv)));
+    row.rpe = gr.querySelector('.f-rpe').value.trim();
+  }
+  row.t = true;
+  gr.classList.add('typed');
+  store();
+  if (row.done) pushSoon(it);
+});
+
+$('date').addEventListener('change', function(){
+  S.date = this.value;
+  if (!S.items.length) S.session = nextSessionFor(S.date);
+  store(); renderApp();
+});
+</script>
+</body>
+</html>
