@@ -226,13 +226,13 @@
     font-family:Oswald,sans-serif; transform:translateY(-50%)}
   .wchart .xl{position:absolute; bottom:5px; font-size:9px; color:var(--dim);
     font-family:Oswald,sans-serif; transform:translateX(-50%); white-space:nowrap}
-  .wrow{display:flex; align-items:center; gap:10px; padding:10px 4px;
+  .wlog{display:flex; align-items:center; gap:10px; padding:10px 4px;
     border-bottom:1px solid var(--line); font-size:13px}
-  .wrow .wd{flex:1; color:var(--dim)}
-  .wrow .wk{font-family:Oswald,sans-serif; font-size:17px}
-  .wrow .wf{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); min-width:44px;
+  .wlog .wd{flex:1; color:var(--dim)}
+  .wlog .wk{font-family:Oswald,sans-serif; font-size:17px}
+  .wlog .wf{font-family:Oswald,sans-serif; font-size:12px; color:var(--dim); min-width:44px;
     text-align:right}
-  .wrow .wx{color:#5D6B78; font-size:16px; padding:2px 6px}
+  .wlog .wx{color:#5D6B78; font-size:16px; padding:2px 6px}
   .wline{display:flex; align-items:center; gap:10px; width:100%; text-align:left;
     background:var(--card); border:1px solid var(--line); border-radius:12px;
     padding:11px 13px; margin:14px 0 4px; font-size:13px}
@@ -404,6 +404,13 @@
     var dot = document.getElementById('syncdot');
     var useCache = firstLoad && cached;
     firstLoad = false;
+    // The cached copy remembers the day it was saved. Opening the app on a new
+    // day, offline or before fresh data lands, must still log to today.
+    if (useCache){
+      var d = new Date();
+      cached.today = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') +
+                     '-' + String(d.getDate()).padStart(2,'0');
+    }
     if (useCache) setTimeout(function(){ ok && ok(cached); }, 0);
     if (dot) dot.classList.add('on');
     call('getData', []).then(function(fresh){
@@ -494,9 +501,19 @@ var TYPE_IN  = { 'work set':'normal', 'warm-up':'warm', 'to failure':'fail',
 function kindOf(name, declared){
   var d = String(declared||'').toLowerCase();
   if (d==='cardio'||d==='timed'||d==='strength') return d;
-  if (/cardio|treadmill|bike|cycl|ellipt|run|jog|walk|stair|swim|rowing machine/i.test(name)) return 'cardio';
-  if (/plank|hold|carry|hang|bridge/i.test(name)) return 'timed';
+  // Whole words only: "crunch" is not a run and "walking lunge" is not a walk.
+  if (/cardio|treadmill|bike|cycling|elliptical|\brun(ning)?\b|\bjog|\bwalk\b|stair|swim|rowing machine/i.test(name)) return 'cardio';
+  if (/plank|\bhold\b|carry|dead hang|\bhang\b|wall sit|bridge/i.test(name)) return 'timed';
   return 'strength';
+}
+/** How you actually logged it before beats any guess from the name. */
+function kindFromHistory(key){
+  var e = exFor(key), s = e && e.recent && e.recent[0] && e.recent[0].sets && e.recent[0].sets[0];
+  if (!s) return null;
+  if (s.duration) return 'cardio';
+  if (s.unit === 'sec') return 'timed';
+  if (s.unit === 'lb') return 'strength';
+  return null;
 }
 function isWarmup(day){ return /^warm[\s-]?up$/i.test(String(day||'').trim()); }
 function warmRoutine(){
@@ -563,6 +580,7 @@ function boot(data){
   $('date').value = S.date;
   renderApp();
   setInterval(paintClock, 1000);
+  pump();                              // anything left over from last time
   // Phones drop background tabs and this page reloads when you come back.
   // Both timers are stored as timestamps, so they carry on where they were.
   if (workingRow()) beginWork('set in progress');
@@ -688,11 +706,12 @@ function addExercise(name, targetSets, seed){
     S.started = Date.now();
   }
   var e = exFor(key);
+  var kind = (seed && seed.kind) || kindFromHistory(key) || kindOf(name);
   S.items.push({ key:key, name: e ? e.name : String(name).trim(),
                  rows: buildRows(key, targetSets, seed), note:'', open:true,
                  warm: !!(seed && seed.warm),
-                 kind: (seed && seed.kind) || kindOf(name),
-                 unit: ((seed && seed.kind) || kindOf(name)) === 'timed' ? 'sec' : 'lb' });
+                 kind: kind,
+                 unit: kind === 'timed' ? 'sec' : 'lb' });
   store();
 }
 
@@ -773,8 +792,9 @@ function tickAllPending(){
 function finishSession(){
   S.items = []; S.started = 0; S.lastSetAt = 0;
   stopRest(); closeSheet(); store();
-  // Reload from the sheet so the start screen shows what actually landed.
-  google.script.run
+  // Reload from the sheet so the start screen shows what actually landed,
+  // once the last few saves have had a moment to reach it.
+  whenSynced(function(){ google.script.run
     .withSuccessHandler(function(d){
       DATA = d;
       S.date = d.today;                 // back to today, ready for the next one
@@ -786,10 +806,15 @@ function finishSession(){
       var bits = t ? [t.sets + ' sets across ' + t.exercises.length + ' exercises'] : null;
       if (t && t.duration) bits.push(t.duration + ' min');
       if (t && t.avgRest) bits.push('avg rest ' + mmss(t.avgRest));
-      toast(bits ? 'Saved: ' + bits.join(' · ') : 'Nothing was logged for this session.');
+      var msg = bits ? 'Saved: ' + bits.join(' · ') : 'Nothing was logged for this session.';
+      if (queue.length) msg = queue.length + ' exercise(s) still waiting to sync. They will be sent when you are online.';
+      toast(msg);
     })
-    .withFailureHandler(function(){ renderApp(); })
-    .getData();
+    .withFailureHandler(function(){
+      renderApp();
+      if (queue.length) toast(queue.length + ' exercise(s) waiting to sync. They will be sent when you are online.');
+    })
+    .getData(); });
 }
 
 function removeExercise(key){
@@ -940,25 +965,60 @@ function push(item){
   };
   if (item.note && payload.sets.length) payload.sets[0].note =
     (payload.sets[0].note ? payload.sets[0].note + ' · ' : '') + item.note;
-  google.script.run
-    .withSuccessHandler(function(res){ applyRests(res); flush(); })
-    .withFailureHandler(function(){
-      queue = queue.filter(function(p){ return p.exercise !== payload.exercise; });
-      queue.push(payload);
-      toast('Offline. ' + queue.length + ' change(s) waiting.');
-    })
-    .logSets(payload);
+  enqueue({ id: opId(S.date, S.session, item.name), fn: 'logSets', args: [payload] });
 }
 function drop(name){
-  google.script.run
-    .withFailureHandler(function(){ toast('Could not update the sheet.'); })
-    .deleteExercise(S.date, S.session, name);
+  enqueue({ id: opId(S.date, S.session, name), fn: 'deleteExercise',
+            args: [S.date, S.session, name] });
 }
-function flush(){
-  if (!queue.length) return;
-  var p = queue.shift();
-  google.script.run.withSuccessHandler(function(res){ applyRests(res); flush(); })
-    .withFailureHandler(function(){ queue.unshift(p); }).logSets(p);
+
+/*
+ * Every write to the sheet goes through one queue kept on the phone, so a
+ * change made offline survives the app being closed. Each exercise in a
+ * session holds at most one pending change: a newer one replaces the older,
+ * and changes to the same exercise are sent one after the other, so an old
+ * save can never land on top of a newer one. Different exercises go in
+ * parallel.
+ */
+var Q_BUSY = {}, Q_WARNED = false, Q_SEQ = 0;
+try { queue = JSON.parse(ls('tl_queue') || '[]') || []; } catch(e){ queue = []; }
+function keepQueue(){ ls('tl_queue', JSON.stringify(queue)); }
+function opId(date, session, name){ return date + '|' + (session || 1) + '|' + norm(name); }
+function enqueue(op){
+  op.seq = Date.now() + '-' + (Q_SEQ++);
+  queue = queue.filter(function(q){ return q.id !== op.id; });
+  queue.push(op);
+  keepQueue();
+  pump();
+}
+function pump(){
+  queue.slice().forEach(function(op){
+    if (Q_BUSY[op.id]) return;
+    Q_BUSY[op.id] = true;
+    var run = google.script.run
+      .withSuccessHandler(function(res){
+        delete Q_BUSY[op.id];
+        queue = queue.filter(function(q){ return q.seq !== op.seq; });
+        keepQueue();
+        if (op.fn === 'logSets') applyRests(res);
+        if (Q_WARNED && !queue.length){ Q_WARNED = false; toast('Back online. Everything is saved.'); }
+        if (queue.length) pump();        // a newer change may be waiting its turn
+      })
+      .withFailureHandler(function(){
+        delete Q_BUSY[op.id];
+        if (!Q_WARNED){
+          Q_WARNED = true;
+          toast('No connection. Your sets are kept on the phone and sent when you are back online.');
+        }
+      });
+    run[op.fn].apply(run, op.args);
+  });
+}
+/** Waits a few seconds for pending saves before reading the sheet back. */
+function whenSynced(fn, tries){
+  tries = tries || 0;
+  if (!queue.length || tries > 25) return fn();
+  setTimeout(function(){ whenSynced(fn, tries + 1); }, 300);
 }
 
 /**
@@ -985,7 +1045,9 @@ function applyRests(res){
   }
   PROG = null;
 }
-setInterval(flush, 20000);
+setInterval(pump, 20000);
+window.addEventListener('online', pump);
+document.addEventListener('visibilitychange', function(){ if (!document.hidden) pump(); });
 
 /**
  * Completes whatever set is currently running. Called when you start another
@@ -1428,7 +1490,7 @@ function renderSession(){
 
     if (/~/.test(html.slice(-900)))
       html += '<div class="gapnote">~ means the set itself is still inside that figure, ' +
-              'because Start set was not tapped</div>';
+              'because that set was not timed</div>';
     html += '</div><div class="rowfoot">' +
       '<button class="mini" data-addrow="' + esc(it.key) + '">+ set</button>' +
       (it.rows.length > 1 ? '<button class="mini" data-droprow="' + esc(it.key) + '">&minus; set</button>' : '') +
@@ -1639,7 +1701,7 @@ function renderWeight(){
 
     h += '<div class="lbl">Recent</div>';
     WGT.slice(-10).reverse().forEach(function(r){
-      h += '<div class="wrow"><span class="wd">' + esc(shortDate(r[0]) + ' ' + r[0].slice(0,4)) + '</span>' +
+      h += '<div class="wlog"><span class="wd">' + esc(shortDate(r[0]) + ' ' + r[0].slice(0,4)) + '</span>' +
            '<span class="wf">' + (r[2] ? fmtKg(r[2]) + '%' : '') + '</span>' +
            '<span class="wk">' + fmtKg(r[1]) + '</span>' +
            '<button class="wx" data-wdel="' + esc(r[0]) + '" aria-label="Delete">×</button></div>';
