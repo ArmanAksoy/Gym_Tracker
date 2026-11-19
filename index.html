@@ -886,6 +886,7 @@ function toggleSet(key, idx){
   var pr = isPr(exFor(key), row);
   store(); push(it);
   if (row.type !== 'warm') startRest(restFor(key), it.name);
+  else wake(false);
   renderApp();
   if (pr) toast('PR on ' + it.name + ' · ' + row.r + ' × ' + fmtW(row.w), true);
 }
@@ -1164,13 +1165,60 @@ function stopRest(){
   $('bar').style.width = '0';
   wake(false);
 }
+/*
+ * Keeps the screen on while a set or a rest is running.
+ * The phone drops the lock whenever the app leaves the screen, so it is asked
+ * for again each time the app comes back. iPhones ignored the request in
+ * home-screen apps before iOS 18.4, so there a tiny silent video also plays,
+ * which phones treat as "something is playing, stay awake".
+ */
+var WAKE = { want:false, lock:null, pending:false, vid:null };
+var WAKE_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) ||
+               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+var WAKE_SRC = 'data:video/mp4;base64,AAAAIGZ0eXBpc29tAAACAGlzb21pc28yYXZjMW1wNDEAAANJbW9vdgAAAGxtdmhkAAAAAAAAAAAAAAAAAAAD6AAAB9AAAQAAAQAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAnN0cmFrAAAAXHRraGQAAAADAAAAAAAAAAAAAAABAAAAAAAAB9AAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAABAAAAAABAAAAAQAAAAAAAkZWR0cwAAABxlbHN0AAAAAAAAAAEAAAfQAAAAAAABAAAAAAHrbWRpYQAAACBtZGhkAAAAAAAAAAAAAAAAAAAoAAAAUABVxAAAAAAALWhkbHIAAAAAAAAAAHZpZGUAAAAAAAAAAAAAAABWaWRlb0hhbmRsZXIAAAABlm1pbmYAAAAUdm1oZAAAAAEAAAAAAAAAAAAAACRkaW5mAAAAHGRyZWYAAAAAAAAAAQAAAAx1cmwgAAAAAQAAAVZzdGJsAAAAtnN0c2QAAAAAAAAAAQAAAKZhdmMxAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAABAAEABIAAAASAAAAAAAAAABFUxhdmM2MC4zMS4xMDIgbGlieDI2NAAAAAAAAAAAAAAAGP//AAAALGF2Y0MBQsAK/+EAFWdCwAraewEQAAADABAAAAMAoPEiagEABGjOD8gAAAAQcGFzcAAAAAEAAAABAAAAFGJ0cnQAAAAAAAALUAAAC1AAAAAYc3R0cwAAAAAAAAABAAAACgAACAAAAAAUc3RzcwAAAAAAAAABAAAAAQAAABxzdHNjAAAAAAAAAAEAAAABAAAACgAAAAEAAAA8c3RzegAAAAAAAAAAAAAACgAAAoMAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAJAAAACQAAAAkAAAAUc3RjbwAAAAAAAAABAAADeQAAAGJ1ZHRhAAAAWm1ldGEAAAAAAAAAIWhkbHIAAAAAAAAAAG1kaXJhcHBsAAAAAAAAAAAAAAAALWlsc3QAAAAlqXRvbwAAAB1kYXRhAAAAAQAAAABMYXZmNjAuMTYuMTAwAAAACGZyZWUAAALcbWRhdAAAAm0GBf//adxF6b3m2Ui3lizYINkj7u94MjY0IC0gY29yZSAxNjQgcjMxMDggMzFlMTlmOSAtIEguMjY0L01QRUctNCBBVkMgY29kZWMgLSBDb3B5bGVmdCAyMDAzLTIwMjMgLSBodHRwOi8vd3d3LnZpZGVvbGFuLm9yZy94MjY0Lmh0bWwgLSBvcHRpb25zOiBjYWJhYz0wIHJlZj0xIGRlYmxvY2s9MTowOjAgYW5hbHlzZT0weDE6MHgxIG1lPWhleCBzdWJtZT0yIHBzeT0xIHBzeV9yZD0xLjAwOjAuMDAgbWl4ZWRfcmVmPTAgbWVfcmFuZ2U9MTYgY2hyb21hX21lPTEgdHJlbGxpcz0wIDh4OGRjdD0wIGNxbT0wIGRlYWR6b25lPTIxLDExIGZhc3RfcHNraXA9MSBjaHJvbWFfcXBfb2Zmc2V0PTAgdGhyZWFkcz0xIGxvb2thaGVhZF90aHJlYWRzPTEgc2xpY2VkX3RocmVhZHM9MCBucj0wIGRlY2ltYXRlPTEgaW50ZXJsYWNlZD0wIGJsdXJheV9jb21wYXQ9MCBjb25zdHJhaW5lZF9pbnRyYT0wIGJmcmFtZXM9MCB3ZWlnaHRwPTAga2V5aW50PTI1MCBrZXlpbnRfbWluPTUgc2NlbmVjdXQ9NDAgaW50cmFfcmVmcmVzaD0wIHJjX2xvb2thaGVhZD0xMCByYz1jcmYgbWJ0cmVlPTEgY3JmPTIzLjAgcWNvbXA9MC42MCBxcG1pbj0wIHFwbWF4PTY5IHFwc3RlcD00IGlwX3JhdGlvPTEuNDAgYXE9MToxLjAwAIAAAAAOZYiEBH///w9FAAEqv4AAAAAFQZogEfUAAAAFQZpAEfUAAAAFQZpgEfUAAAAFQZqAEfUAAAAFQZqgEfUAAAAFQZrAEfUAAAAFQZrgEfUAAAAFQZsAEPUAAAAFQZsgP9Q=';
+
 function wake(on){
+  WAKE.want = !!on;
+  if (on){ wakeLock(); wakeVideo(true); }
+  else {
+    var l = WAKE.lock; WAKE.lock = null;
+    if (l) { try { l.release(); } catch(e){} }
+    wakeVideo(false);
+  }
+}
+function wakeLock(){
+  if (!navigator.wakeLock || WAKE.lock || WAKE.pending || document.hidden) return;
+  WAKE.pending = true;
   try {
-    if (on && navigator.wakeLock && !rest.lock) {
-      navigator.wakeLock.request('screen').then(function(l){ rest.lock = l; }).catch(function(){});
-    } else if (!on && rest.lock) { rest.lock.release(); rest.lock = null; }
+    navigator.wakeLock.request('screen').then(function(l){
+      WAKE.pending = false;
+      if (!WAKE.want){ l.release(); return; }        // stopped while we waited
+      WAKE.lock = l;
+      l.addEventListener('release', function(){ if (WAKE.lock === l) WAKE.lock = null; });
+    }).catch(function(){ WAKE.pending = false; });
+  } catch(e){ WAKE.pending = false; }
+}
+function wakeVideo(on){
+  if (!WAKE_IOS && navigator.wakeLock) return;       // the proper lock is enough
+  try {
+    if (!WAKE.vid){
+      if (!on) return;
+      var v = document.createElement('video');
+      v.muted = true; v.loop = true; v.playsInline = true;
+      v.setAttribute('muted', ''); v.setAttribute('playsinline', '');
+      v.setAttribute('aria-hidden', 'true');
+      v.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:.01;pointer-events:none';
+      v.src = WAKE_SRC;
+      document.body.appendChild(v);
+      WAKE.vid = v;
+    }
+    if (on){ var pr = WAKE.vid.play(); if (pr && pr.catch) pr.catch(function(){}); }
+    else WAKE.vid.pause();
   } catch(e){}
 }
+document.addEventListener('visibilitychange', function(){
+  if (!document.hidden && WAKE.want){ wakeLock(); wakeVideo(true); }
+});
 function beep(){
   try {
     var C = window.AudioContext || window.webkitAudioContext;

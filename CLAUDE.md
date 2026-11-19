@@ -21,4 +21,5 @@ Personal workout log for Arman. Hypertrophy goal, trains mostly Sat/Sun, three r
 - The cached `getData` copy carries an old `today`; the bridge overwrites it with the device date.
 - All writes go through the persistent queue (`enqueue`/`pump`, localStorage `tl_queue`): one pending op per date|session|exercise, newest wins, same-exercise ops are serialized.
 - `.wrow` is the warm-up grid; weight-tab rows are `.wlog`. Do not reuse class names across tabs.
+- Keep-awake (`wake`): the browser drops the wake lock when the app is hidden, so it is re-requested on `visibilitychange`; iPhones also play a hidden silent looping video (home-screen apps ignored wake lock before iOS 18.4). Only one lock at a time.
 - Apps Script `addMetaTag` only accepts four values (only matters if the sheet-bound version is ever used again).
